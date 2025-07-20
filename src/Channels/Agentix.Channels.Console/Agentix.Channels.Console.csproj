@@ -1,13 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Core\Agentix.Core\Agentix.Core.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Agentix.Channels.Console</PackageId>
+    <Authors>Agentix</Authors>
+    <Description>Console channel adapter for Agentix AI agent framework</Description>
+    <PackageTags>ai;agents;console;channel;agentix</PackageTags>
+    <RepositoryUrl>https://github.com/agentix/agentix.net</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Agentix.Core\Agentix.Core.csproj" />
+  </ItemGroup>
 
 </Project>

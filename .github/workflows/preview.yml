@@ -1,0 +1,88 @@
+name: Preview Release
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  preview:
+    name: Build & Publish Preview
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'agentix' # Only run on main repository
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Generate version
+      id: version
+      run: |
+        # Use timestamp for preview versions
+        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+        COMMIT_SHA=${GITHUB_SHA:0:8}
+        VERSION="0.0.1-preview.$TIMESTAMP+$COMMIT_SHA"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Preview version: $VERSION"
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build solution
+      run: |
+        dotnet build --configuration Release --no-restore \
+          -p:VersionPrefix="0.0.1" \
+          -p:VersionSuffix="preview.${{ steps.version.outputs.version }}" \
+          --verbosity minimal
+    
+    - name: Run tests
+      run: dotnet test --configuration Release --no-build --verbosity minimal
+    
+    - name: Create preview packages
+      run: |
+        dotnet pack --configuration Release --no-build --output ./packages \
+          -p:VersionPrefix="0.0.1" \
+          -p:VersionSuffix="preview.${{ steps.version.outputs.version }}" \
+          --verbosity minimal
+    
+    - name: Publish to GitHub Packages
+      run: |
+        dotnet nuget add source \
+          --username ${{ github.actor }} \
+          --password ${{ secrets.GITHUB_TOKEN }} \
+          --store-password-in-clear-text \
+          --name github \
+          "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+        
+        dotnet nuget push "./packages/*.nupkg" \
+          --source "github" \
+          --skip-duplicate
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: preview-packages
+        path: |
+          ./packages/*.nupkg
+          ./packages/*.snupkg
+        retention-days: 30 

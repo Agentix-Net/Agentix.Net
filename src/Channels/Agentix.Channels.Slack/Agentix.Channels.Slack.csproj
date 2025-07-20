@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Agentix.Channels.Slack</PackageId>
-    <Version>0.0.1</Version>
     <Authors>Agentix</Authors>
     <Description>Slack channel adapter for Agentix AI agent framework</Description>
     <PackageTags>ai;agents;slack;channel;agentix</PackageTags>

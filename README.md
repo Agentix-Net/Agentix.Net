@@ -298,7 +298,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🗺️ Roadmap
 
 - ✅ Core framework with provider/channel abstraction
-- ✅ Claude provider implementation  
+f- ✅ Claude provider implementation  
 - ✅ Console channel implementation
 - ✅ Slack channel implementation
 - 🚧 OpenAI provider
