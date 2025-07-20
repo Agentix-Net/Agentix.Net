@@ -50,7 +50,7 @@ jobs:
       run: dotnet test --configuration ${{ matrix.configuration }} --no-build --verbosity minimal --logger trx --results-directory TestResults/
     
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results-${{ matrix.configuration }}
@@ -58,7 +58,7 @@ jobs:
     
     - name: Upload build artifacts (Release only)
       if: matrix.configuration == 'Release'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: nuget-packages
         path: |
