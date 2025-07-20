@@ -2,25 +2,18 @@ using Agentix.Core.Models;
 
 namespace Agentix.Core.Interfaces;
 
+/// <summary>
+/// Simplified orchestrator interface focused on core message processing functionality
+/// </summary>
 public interface IAgentixOrchestrator
 {
+    /// <summary>
+    /// Process an incoming message using the default AI provider
+    /// </summary>
     Task<AIResponse> ProcessMessageAsync(IncomingMessage message, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Process an incoming message using a specific AI provider
+    /// </summary>
     Task<AIResponse> ProcessMessageAsync(IncomingMessage message, string? providerName = null, CancellationToken cancellationToken = default);
-    
-    Task StartAsync(CancellationToken cancellationToken = default);
-    Task StopAsync(CancellationToken cancellationToken = default);
-    
-    // Health and status
-    Task<bool> IsHealthyAsync();
-    Task<SystemStatus> GetStatusAsync();
-}
-
-public class SystemStatus
-{
-    public bool IsHealthy { get; set; }
-    public int RegisteredProviders { get; set; }
-    public int RunningChannels { get; set; }
-    public Dictionary<string, bool> ProviderHealth { get; set; } = new();
-    public Dictionary<string, bool> ChannelStatus { get; set; } = new();
-    public DateTime LastChecked { get; set; } = DateTime.UtcNow;
 } 

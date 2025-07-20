@@ -31,7 +31,8 @@ class Program
         
         builder.ConfigureServices(services =>
         {
-            services.AddAgentixCore(options =>
+            // Configure Agentix with simplified fluent API
+            services.AddAgentix(options =>
             {
                 options.SystemPrompt = @"You are an expert Architecture Decision Record (ADR) assistant. You help software teams document important architectural decisions using the ADR format.
 
@@ -67,7 +68,13 @@ Be direct and practical in helping users create, review, and improve their archi
             });
         });
 
-        // Build and run Agentix - that's it!
+        System.Console.WriteLine("✅ Agentix Console bot configured successfully!");
+        System.Console.WriteLine("💬 Start typing to chat with the ADR assistant...");
+        System.Console.WriteLine("   The AI will now respond with the configured personality and context.");
+        System.Console.WriteLine();
+        System.Console.WriteLine("Press Ctrl+C to stop the bot");
+
+        // Build and run Agentix - simplified startup!
         await builder.BuildAndRunAgentixAsync();
     }
 

@@ -5,10 +5,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Agentix.Core.Extensions;
 
+/// <summary>
+/// Simplified host extensions for Agentix
+/// </summary>
 public static class HostExtensions
 {
     /// <summary>
-    /// Builds the host and starts the Agentix orchestrator, then runs the application.
+    /// Builds the host, starts Agentix, and runs the application.
     /// This provides a fluent API: builder.BuildAndRunAgentixAsync()
     /// </summary>
     /// <param name="builder">The host builder</param>
@@ -21,7 +24,7 @@ public static class HostExtensions
     }
     
     /// <summary>
-    /// Starts the Agentix orchestrator and runs the application.
+    /// Starts Agentix channels and runs the application.
     /// This is the main entry point for Agentix applications.
     /// </summary>
     /// <param name="host">The configured host</param>
@@ -35,9 +38,8 @@ public static class HostExtensions
         {
             logger?.LogInformation("🚀 Starting Agentix...");
             
-            // Get and start the orchestrator
-            var orchestrator = host.Services.GetRequiredService<IAgentixOrchestrator>();
-            await orchestrator.StartAsync(cancellationToken);
+            // Start all registered channels
+            await StartAgentixChannelsAsync(host, cancellationToken);
             
             logger?.LogInformation("✅ Agentix started successfully");
             
@@ -52,41 +54,78 @@ public static class HostExtensions
     }
     
     /// <summary>
-    /// Starts the Agentix orchestrator only, without running the host.
+    /// Starts Agentix channels only, without running the host.
     /// Useful when you want to start Agentix but handle the host lifecycle yourself.
     /// </summary>
     /// <param name="host">The configured host</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>A task that completes when Agentix is started</returns>
+    /// <returns>A task that completes when Agentix channels are started</returns>
     public static async Task StartAgentixAsync(this IHost host, CancellationToken cancellationToken = default)
     {
         var logger = host.Services.GetService<ILogger<IHost>>();
         
         try
         {
-            logger?.LogInformation("🚀 Starting Agentix orchestrator...");
+            logger?.LogInformation("🚀 Starting Agentix channels...");
             
-            // Get and start the orchestrator
-            var orchestrator = host.Services.GetRequiredService<IAgentixOrchestrator>();
-            await orchestrator.StartAsync(cancellationToken);
+            // Start all registered channels
+            await StartAgentixChannelsAsync(host, cancellationToken);
             
-            logger?.LogInformation("✅ Agentix orchestrator started successfully");
+            logger?.LogInformation("✅ Agentix channels started successfully");
         }
         catch (Exception ex)
         {
-            logger?.LogError(ex, "❌ Failed to start Agentix orchestrator");
+            logger?.LogError(ex, "❌ Failed to start Agentix channels");
             throw;
         }
     }
-    
+
     /// <summary>
-    /// Gets the health status of the Agentix system.
+    /// Gets basic information about the Agentix system.
     /// </summary>
     /// <param name="host">The configured host</param>
-    /// <returns>The system status</returns>
-    public static async Task<SystemStatus> GetAgentixStatusAsync(this IHost host)
+    /// <returns>Basic system information</returns>
+    public static AgentixSystemInfo GetAgentixInfo(this IHost host)
     {
-        var orchestrator = host.Services.GetRequiredService<IAgentixOrchestrator>();
-        return await orchestrator.GetStatusAsync();
+        var providers = host.Services.GetServices<IAIProvider>();
+        var channels = host.Services.GetServices<IChannelAdapter>();
+
+        return new AgentixSystemInfo
+        {
+            AvailableProviders = providers.Select(p => p.Name).ToList(),
+            AvailableChannels = channels.Select(c => c.Name).ToList(),
+            RunningChannels = channels.Where(c => c.IsRunning).Select(c => c.Name).ToList()
+        };
     }
+
+    private static async Task StartAgentixChannelsAsync(IHost host, CancellationToken cancellationToken)
+    {
+        var logger = host.Services.GetService<ILogger<IHost>>();
+        var channels = host.Services.GetServices<IChannelAdapter>();
+
+        var startTasks = channels.Select(async channel =>
+        {
+            try
+            {
+                await channel.StartAsync(cancellationToken);
+                logger?.LogInformation("Started channel: {ChannelName}", channel.Name);
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, "Failed to start channel: {ChannelName}", channel.Name);
+            }
+        });
+
+        await Task.WhenAll(startTasks);
+    }
+}
+
+/// <summary>
+/// Basic system information for Agentix
+/// </summary>
+public class AgentixSystemInfo
+{
+    public List<string> AvailableProviders { get; set; } = new();
+    public List<string> AvailableChannels { get; set; } = new();
+    public List<string> RunningChannels { get; set; } = new();
 } 

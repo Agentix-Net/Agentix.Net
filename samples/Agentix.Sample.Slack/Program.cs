@@ -53,7 +53,8 @@ class Program
         
         builder.ConfigureServices(services =>
         {
-            services.AddAgentixCore(options =>
+            // Configure Agentix with simplified fluent API
+            services.AddAgentix(options =>
             {
                 options.SystemPrompt = @"You are a helpful AI assistant integrated with Slack. You can:
 
