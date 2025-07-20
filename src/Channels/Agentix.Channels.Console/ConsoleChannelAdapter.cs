@@ -77,7 +77,6 @@ public class ConsoleChannelAdapter : IChannelAdapter
             }
 
             // Process with AI
-
             var aiResponse = await _orchestrator.ProcessMessageAsync(message, cancellationToken);
 
             return new ChannelResponse
@@ -106,14 +105,11 @@ public class ConsoleChannelAdapter : IChannelAdapter
         }
         else
         {
-            WriteToConsole($"🤖 {response.Content}", ConsoleColor.Green);
+            WriteToConsole($"Assistant: {response.Content}", ConsoleColor.Green);
             
             if (_options.ShowMetadata && response.Usage.TotalTokens > 0)
             {
-                WriteToConsole($"   📊 Tokens: {response.Usage.InputTokens}/{response.Usage.OutputTokens} | " +
-                             $"Cost: ${response.EstimatedCost:F4} | " +
-                             $"Time: {response.ResponseTime.TotalMilliseconds:F0}ms | " +
-                             $"Provider: {response.ProviderId}", 
+                WriteToConsole($"📊 Tokens used: {response.Usage.InputTokens} in, {response.Usage.OutputTokens} out (${response.EstimatedCost:F4})", 
                              ConsoleColor.DarkGray);
             }
         }
@@ -139,7 +135,7 @@ public class ConsoleChannelAdapter : IChannelAdapter
         // Start the console input loop
         _runningTask = Task.Run(async () => await RunConsoleLoopAsync(_cancellationTokenSource.Token), cancellationToken);
 
-        _logger.LogInformation("Console channel started");
+        _logger.LogInformation("Console channel started and ready for interaction");
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
@@ -171,6 +167,7 @@ public class ConsoleChannelAdapter : IChannelAdapter
         _cancellationTokenSource = null;
         _runningTask = null;
 
+        WriteToConsole("👋 Goodbye!", ConsoleColor.Cyan);
         _logger.LogInformation("Console channel stopped");
     }
 
@@ -193,33 +190,45 @@ public class ConsoleChannelAdapter : IChannelAdapter
                 // Create incoming message
                 var message = new IncomingMessage
                 {
-                    Content = input,
-                    UserId = Environment.UserName,
-                    UserName = Environment.UserName,
+                    Content = input.Trim(),
+                    UserId = _options.DefaultUserId ?? Environment.UserName,
+                    UserName = _options.DefaultUserName ?? Environment.UserName,
                     ChannelId = "console",
                     ChannelName = "Console",
                     Channel = ChannelType,
                     Type = MessageType.Text
                 };
 
-                // Process the message
-                var response = await ProcessAsync(message, cancellationToken);
-                
-                // Send the response
-                if (response.AIResponse != null)
+                try
                 {
-                    var context = new MessageContext
+                    // Process the message
+                    var response = await ProcessAsync(message, cancellationToken);
+                    
+                    // Send the response
+                    if (response.AIResponse != null)
                     {
-                        ChannelId = message.ChannelId,
-                        UserId = message.UserId,
-                        Channel = message.Channel,
-                        OriginalMessage = message
-                    };
+                        var context = new MessageContext
+                        {
+                            ChannelId = message.ChannelId,
+                            UserId = message.UserId,
+                            Channel = message.Channel,
+                            OriginalMessage = message
+                        };
 
-                    await SendResponseAsync(response.AIResponse, context, cancellationToken);
+                        await SendResponseAsync(response.AIResponse, context, cancellationToken);
+                    }
+                    else if (!response.Success)
+                    {
+                        WriteToConsole($"❌ Error: {response.ErrorMessage}", ConsoleColor.Red);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing message: {Message}", input);
+                    WriteToConsole($"❌ Unexpected error: {ex.Message}", ConsoleColor.Red);
                 }
 
-                System.Console.WriteLine(); // Add spacing
+                System.Console.WriteLine(); // Add spacing between interactions
             }
         }
         catch (OperationCanceledException)
@@ -229,16 +238,25 @@ public class ConsoleChannelAdapter : IChannelAdapter
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in console loop");
+            WriteToConsole($"❌ Console loop error: {ex.Message}", ConsoleColor.Red);
         }
     }
 
-
-
     private void ShowWelcomeMessage()
     {
-        System.Console.Clear();
-        WriteToConsole("🚀 Welcome to Agentix Console!", ConsoleColor.Cyan);
-        WriteToConsole("Type your messages to chat with AI. Commands:", ConsoleColor.Gray);
+        if (_options.ClearOnStart)
+        {
+            System.Console.Clear();
+        }
+        
+        WriteToConsole("🚀 Agentix Console ready!", ConsoleColor.Cyan);
+        
+        if (!string.IsNullOrEmpty(_options.WelcomeMessage))
+        {
+            WriteToConsole(_options.WelcomeMessage, ConsoleColor.Gray);
+        }
+        
+        WriteToConsole("💡 Type your messages or commands:", ConsoleColor.Gray);
         WriteToConsole("  /help - Show help", ConsoleColor.Gray);
         WriteToConsole("  /quit - Exit the application", ConsoleColor.Gray);
         System.Console.WriteLine();
@@ -262,7 +280,7 @@ system prompts that define its personality and expertise areas.";
 
     private void WritePrompt()
     {
-        WriteToConsole($"{Environment.UserName}> ", ConsoleColor.Yellow, false);
+        WriteToConsole($"You: ", ConsoleColor.Yellow, false);
     }
 
     private void WriteToConsole(string message, ConsoleColor color = ConsoleColor.White, bool newLine = true)
@@ -306,4 +324,7 @@ public class ConsoleChannelOptions
     public bool ShowMetadata { get; set; } = true;
     public string Prompt { get; set; } = "> ";
     public bool ClearOnStart { get; set; } = true;
+    public string? WelcomeMessage { get; set; }
+    public string? DefaultUserId { get; set; }
+    public string? DefaultUserName { get; set; }
 } 

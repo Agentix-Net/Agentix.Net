@@ -29,41 +29,40 @@ dotnet add package Agentix.Channels.WebApi        # Coming soon
 
 ```csharp
 using Agentix.Core.Extensions;
-using Agentix.Providers.Claude;
-using Agentix.Channels.Console;
+using Agentix.Providers.Claude.Extensions;
+using Agentix.Channels.Console.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = Host.CreateDefaultBuilder(args);
 
-// Add Agentix framework
+// Configure Agentix
 builder.Services.AddAgentixCore()
     .AddClaudeProvider(options =>
     {
         options.ApiKey = "your-claude-api-key";
         options.DefaultModel = "claude-3-sonnet-20241022";
     })
-    .AddConsoleChannel();
+    .AddConsoleChannel(options =>
+    {
+        options.WelcomeMessage = "Welcome to your AI assistant!";
+        options.ShowMetadata = true;
+    });
 
-var app = builder.Build();
-
-// Get the orchestrator and start the application
-var orchestrator = app.Services.GetRequiredService<IAgentixOrchestrator>();
-await orchestrator.StartAsync();
-
-await app.RunAsync();
+// Build and run - that's it!
+await builder.BuildAndRunAgentixAsync();
 ```
 
 ### Web API Application
 
 ```csharp
 using Agentix.Core.Extensions;
-using Agentix.Providers.OpenAI;
-using Agentix.Channels.WebApi;
+using Agentix.Providers.OpenAI.Extensions;
+using Agentix.Channels.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Agentix framework
+// Configure Agentix
 builder.Services.AddAgentixCore()
     .AddOpenAIProvider(options =>
     {
@@ -76,6 +75,8 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+// Start Agentix and run the web API
+await app.StartAgentixAsync();
 app.MapControllers();
 app.Run();
 ```
@@ -107,13 +108,15 @@ app.Run();
 ### Multiple AI Providers
 
 ```csharp
-services.AddAgentixCore()
-    .AddClaudeProvider(options => options.ApiKey = claudeKey)
-    .AddOpenAIProvider(options => options.ApiKey = openAiKey);
+var builder = Host.CreateDefaultBuilder(args);
 
-// The framework will automatically route requests to the best provider
-// or you can specify which one to use
-var response = await orchestrator.ProcessMessageAsync(message, "claude");
+builder.Services.AddAgentixCore()
+    .AddClaudeProvider(options => options.ApiKey = claudeKey)
+    .AddOpenAIProvider(options => options.ApiKey = openAiKey)
+    .AddConsoleChannel();
+
+// Build and run - the framework handles provider routing automatically
+await builder.BuildAndRunAgentixAsync();
 ```
 
 ### Multi-Channel Support
@@ -145,6 +148,47 @@ services.AddAgentixCore(options =>
     options.Temperature = 0.7f;
     options.MaxTokens = 4000;
 });
+```
+
+## 🚀 Starting Your Application
+
+Agentix provides clean, simple APIs for starting your applications without manual service resolution:
+
+### Option 1: One-liner (Recommended)
+```csharp
+// Configure and run in one line
+await Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services => services
+        .AddAgentixCore()
+        .AddClaudeProvider(options => options.ApiKey = apiKey)
+        .AddConsoleChannel())
+    .BuildAndRunAgentixAsync();
+```
+
+### Option 2: Traditional approach  
+```csharp
+// Build first, then run
+var app = Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services => services
+        .AddAgentixCore()
+        .AddClaudeProvider(options => options.ApiKey = apiKey)
+        .AddConsoleChannel())
+    .Build();
+
+await app.RunAgentixAsync();
+```
+
+### Option 3: For Web APIs
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAgentixCore()
+    .AddOpenAIProvider(options => options.ApiKey = apiKey)
+    .AddWebApiChannel();
+
+var app = builder.Build();
+await app.StartAgentixAsync(); // Start Agentix only
+app.MapControllers();
+app.Run(); // Run the web server
 ```
 
 ## ⚙️ Configuration
@@ -195,7 +239,7 @@ Build intelligent bots that can operate across multiple platforms (Slack, Teams,
 Create AI-powered REST APIs that can switch between different AI providers based on cost, performance, or availability requirements.
 
 ### Console Tools
-Build command-line AI tools for developers, with rich interaction capabilities and easy integration into existing workflows.
+Build command-line AI tools for developers with minimal code. Just configure your providers and channels, then call `BuildAndRunAgentixAsync()` - the console channel handles all user interaction automatically, including conversation loops, command processing, and error handling.
 
 ### Multi-Modal Applications
 Combine text, image, and file processing capabilities across different AI providers in a single application.
