@@ -2,147 +2,265 @@
 
 A modular .NET framework for building AI-powered applications with multiple providers and communication channels.
 
-## Project Structure
+Build intelligent applications that can seamlessly switch between AI providers (OpenAI, Claude, Azure OpenAI) and communicate through various channels (Console, Slack, Teams, Web APIs) with minimal code changes.
 
-```
-Agentix.Net/
-├── src/                          # Framework source code
-│   ├── Core/
-│   │   └── Agentix.Core/         # Core abstractions and interfaces
-│   ├── Channels/                 # Communication channel adapters
-│   │   └── Agentix.Channels.Console/
-│   └── Providers/                # AI provider implementations
-│       └── Agentix.Providers.Claude/
-├── samples/                      # Sample applications
-│   └── Agentix.Sample.Console/   # Console sample app
-├── docs/                         # Documentation
-│   └── agentix_design_document.md
-├── Agentix.sln                   # Solution file
-└── README.md                     # This file
-```
+## 🚀 Quick Start
 
-## Quick Start
+### Installation
 
-### Prerequisites
-
-- .NET 8.0 SDK
-- Claude API key (for the sample)
-
-### Running the Console Sample
-
-1. Clone the repository
-2. Navigate to the samples directory:
-   ```bash
-   cd samples/Agentix.Sample.Console
-   ```
-3. Run with your Claude API key:
-   ```bash
-   dotnet run -- --api-key YOUR_CLAUDE_API_KEY
-   ```
-   Or set environment variable:
-   ```bash
-   set CLAUDE_API_KEY=YOUR_API_KEY
-   dotnet run
-   ```
-
-## Framework Components
-
-### Core Framework (`src/Core/Agentix.Core`)
-
-The core framework provides:
-- Abstractions for AI providers (`IAIProvider`)
-- Channel adapter interfaces (`IChannelAdapter`)
-- Orchestration services (`IAgentixOrchestrator`)
-- Registry services for providers and channels
-- Common models and utilities
-
-### Channels (`src/Channels/`)
-
-Channel adapters enable communication through different platforms:
-- **Console**: Command-line interface ✅
-- **Slack**: Slack bot integration (planned)
-- **Teams**: Microsoft Teams integration (planned)
-- **WebAPI**: HTTP REST API (planned)
-
-### Providers (`src/Providers/`)
-
-AI provider implementations:
-- **Claude**: Anthropic Claude API ✅
-- **OpenAI**: OpenAI GPT models (planned)
-- **Azure OpenAI**: Azure OpenAI Service (planned)
-- **Ollama**: Local model hosting (planned)
-
-## Adding New Components
-
-### Adding a Channel
-
-1. Create a new project in `src/Channels/`:
-   ```
-   src/Channels/Agentix.Channels.YourChannel/
-   ```
-2. Implement `IChannelAdapter` interface
-3. Add project to solution
-4. Add reference to `Agentix.Core`
-
-See [src/Channels/README.md](src/Channels/README.md) for detailed guidance.
-
-### Adding a Provider
-
-1. Create a new project in `src/Providers/`:
-   ```
-   src/Providers/Agentix.Providers.YourProvider/
-   ```
-2. Implement `IAIProvider` interface
-3. Add project to solution
-4. Add reference to `Agentix.Core`
-
-See [src/Providers/README.md](src/Providers/README.md) for detailed guidance.
-
-## Building the Solution
+Install the core package and your desired providers/channels via NuGet:
 
 ```bash
-dotnet build
+# Core framework
+dotnet add package Agentix.Core
+
+# AI Providers (choose one or more)
+dotnet add package Agentix.Providers.Claude
+dotnet add package Agentix.Providers.OpenAI       # Coming soon
+dotnet add package Agentix.Providers.AzureOpenAI  # Coming soon
+
+# Channels (choose based on your application type)
+dotnet add package Agentix.Channels.Console
+dotnet add package Agentix.Channels.Slack         # Coming soon
+dotnet add package Agentix.Channels.WebApi        # Coming soon
 ```
 
-## Testing
+### Simple Console Application
+
+```csharp
+using Agentix.Core.Extensions;
+using Agentix.Providers.Claude;
+using Agentix.Channels.Console;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+// Add Agentix framework
+builder.Services.AddAgentixCore()
+    .AddClaudeProvider(options =>
+    {
+        options.ApiKey = "your-claude-api-key";
+        options.DefaultModel = "claude-3-sonnet-20241022";
+    })
+    .AddConsoleChannel();
+
+var app = builder.Build();
+
+// Get the orchestrator and start the application
+var orchestrator = app.Services.GetRequiredService<IAgentixOrchestrator>();
+await orchestrator.StartAsync();
+
+await app.RunAsync();
+```
+
+### Web API Application
+
+```csharp
+using Agentix.Core.Extensions;
+using Agentix.Providers.OpenAI;
+using Agentix.Channels.WebApi;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Agentix framework
+builder.Services.AddAgentixCore()
+    .AddOpenAIProvider(options =>
+    {
+        options.ApiKey = builder.Configuration["OpenAI:ApiKey"];
+        options.DefaultModel = "gpt-4";
+    })
+    .AddWebApiChannel();
+
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+app.MapControllers();
+app.Run();
+```
+
+## 📦 Available Packages
+
+### Core Framework
+- **Agentix.Core** - Core abstractions, orchestration, and dependency injection
+
+### AI Providers
+- **Agentix.Providers.Claude** ✅ - Anthropic Claude integration
+- **Agentix.Providers.OpenAI** 🚧 - OpenAI GPT models
+- **Agentix.Providers.AzureOpenAI** 🚧 - Azure OpenAI Service
+- **Agentix.Providers.Ollama** 🚧 - Local model hosting
+
+### Communication Channels
+- **Agentix.Channels.Console** ✅ - Console/terminal interface
+- **Agentix.Channels.Slack** 🚧 - Slack bot integration
+- **Agentix.Channels.Teams** 🚧 - Microsoft Teams integration
+- **Agentix.Channels.WebApi** 🚧 - HTTP REST API interface
+
+### Advanced Features
+- **Agentix.Context** 🚧 - Conversation memory and state management
+- **Agentix.Tools** 🚧 - Function calling and tool integration
+- **Agentix.Rag** 🚧 - Retrieval Augmented Generation
+
+## 💻 Usage Examples
+
+### Multiple AI Providers
+
+```csharp
+services.AddAgentixCore()
+    .AddClaudeProvider(options => options.ApiKey = claudeKey)
+    .AddOpenAIProvider(options => options.ApiKey = openAiKey);
+
+// The framework will automatically route requests to the best provider
+// or you can specify which one to use
+var response = await orchestrator.ProcessMessageAsync(message, "claude");
+```
+
+### Multi-Channel Support
+
+```csharp
+services.AddAgentixCore()
+    .AddClaudeProvider(options => options.ApiKey = apiKey)
+    .AddConsoleChannel()
+    .AddSlackChannel(options => options.BotToken = slackToken)
+    .AddWebApiChannel();
+
+// Messages from any channel are handled uniformly
+// The framework handles channel-specific formatting automatically
+```
+
+### Custom Configuration
+
+```csharp
+services.AddAgentixCore(options =>
+{
+    options.DefaultSystemPrompt = "You are a helpful assistant specialized in .NET development.";
+    options.EnableCostTracking = true;
+    options.MaxConcurrentRequests = 10;
+})
+.AddClaudeProvider(options =>
+{
+    options.ApiKey = configuration["Claude:ApiKey"];
+    options.DefaultModel = "claude-3-sonnet-20241022";
+    options.Temperature = 0.7f;
+    options.MaxTokens = 4000;
+});
+```
+
+## ⚙️ Configuration
+
+### Using appsettings.json
+
+```json
+{
+  "Agentix": {
+    "DefaultSystemPrompt": "You are a helpful AI assistant.",
+    "EnableCostTracking": true
+  },
+  "Claude": {
+    "ApiKey": "your-claude-api-key",
+    "DefaultModel": "claude-3-sonnet-20241022",
+    "Temperature": 0.7,
+    "MaxTokens": 4000
+  },
+  "OpenAI": {
+    "ApiKey": "your-openai-api-key",
+    "DefaultModel": "gpt-4",
+    "Organization": "your-org-id"
+  }
+}
+```
+
+### Using Environment Variables
 
 ```bash
-dotnet test
+# Claude
+CLAUDE_API_KEY=your-claude-api-key
+
+# OpenAI
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_ORGANIZATION=your-org-id
+
+# Slack
+SLACK_BOT_TOKEN=your-slack-bot-token
+SLACK_SIGNING_SECRET=your-signing-secret
 ```
 
-## Documentation
+## 🎯 Use Cases
 
-- [Design Document](docs/agentix_design_document.md) - Comprehensive architecture and design
-- [Channel Development Guide](src/Channels/README.md)
-- [Provider Development Guide](src/Providers/README.md)
-- [Sample Applications Guide](samples/README.md)
+### Chatbots and Virtual Assistants
+Build intelligent bots that can operate across multiple platforms (Slack, Teams, Web) while maintaining conversation context and utilizing the best AI model for each task.
 
-## Contributing
+### API Services
+Create AI-powered REST APIs that can switch between different AI providers based on cost, performance, or availability requirements.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes following the established patterns
-4. Ensure tests pass
-5. Submit a pull request
+### Console Tools
+Build command-line AI tools for developers, with rich interaction capabilities and easy integration into existing workflows.
 
-## License
+### Multi-Modal Applications
+Combine text, image, and file processing capabilities across different AI providers in a single application.
+
+## 🔧 Advanced Features
+
+### Provider Routing
+```csharp
+// Automatic routing based on request characteristics
+var response = await orchestrator.ProcessMessageAsync(message);
+
+// Manual provider selection
+var response = await orchestrator.ProcessMessageAsync(message, "claude");
+
+// Fallback handling
+services.AddAgentixCore(options =>
+{
+    options.FallbackProvider = "openai";
+    options.EnableAutomaticFailover = true;
+});
+```
+
+### Cost Tracking
+```csharp
+var response = await orchestrator.ProcessMessageAsync(message);
+Console.WriteLine($"Request cost: ${response.EstimatedCost:F4}");
+Console.WriteLine($"Tokens used: {response.Usage.TotalTokens}");
+```
+
+### Health Monitoring
+```csharp
+var status = await orchestrator.GetStatusAsync();
+Console.WriteLine($"Healthy providers: {status.RegisteredProviders}");
+Console.WriteLine($"Running channels: {status.RunningChannels}");
+```
+
+## 📖 Documentation
+
+- [API Reference](https://docs.agentix.net/api) - Complete API documentation
+- [Samples](samples/) - Example applications and use cases
+- [Architecture Guide](docs/agentix_design_document.md) - Detailed framework design
+
+## 🤝 Community
+
+- [GitHub Discussions](https://github.com/agentix/agentix.net/discussions) - Ask questions and share ideas
+- [Issues](https://github.com/agentix/agentix.net/issues) - Report bugs and request features
+- [Contributing Guide](CONTRIBUTING.md) - Help improve the framework
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Roadmap
+## 🗺️ Roadmap
 
-- [ ] OpenAI Provider
-- [ ] Slack Channel Adapter
-- [ ] Teams Channel Adapter
-- [ ] Web API Channel
-- [ ] Context Memory System
-- [ ] Tool/Function Calling Support
-- [ ] RAG Engine Integration
-- [ ] Multi-provider Routing
+- ✅ Core framework with provider/channel abstraction
+- ✅ Claude provider implementation
+- ✅ Console channel implementation
+- 🚧 OpenAI provider
+- 🚧 Slack and Teams channels
+- 🚧 Context memory system
+- 🚧 Tool/function calling support
+- 🚧 RAG engine integration
+- 🚧 Streaming responses
+- 🚧 Multi-modal support (vision, audio)
 
-## Architecture Goals
+---
 
-- **Modular**: Pay-as-you-grow package model
-- **Production Ready**: Enterprise-grade security and scalability
-- **Developer Friendly**: Native .NET patterns and dependency injection
-- **Channel Agnostic**: Work across multiple communication platforms
+**Get started today!** Install `Agentix.Core` and begin building your AI-powered .NET applications.
