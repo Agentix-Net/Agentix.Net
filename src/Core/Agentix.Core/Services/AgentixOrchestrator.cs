@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using Agentix.Core.Interfaces;
 using Agentix.Core.Models;
+using Agentix.Core.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Agentix.Core.Services;
@@ -9,19 +11,22 @@ public class AgentixOrchestrator : IAgentixOrchestrator
 {
     private readonly IProviderRegistry _providerRegistry;
     private readonly IChannelRegistry _channelRegistry;
-    private readonly ISystemPromptProvider _systemPromptProvider;
+    private readonly AgentixOptions _options;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AgentixOrchestrator> _logger;
     private bool _isRunning;
 
     public AgentixOrchestrator(
         IProviderRegistry providerRegistry,
         IChannelRegistry channelRegistry,
-        ISystemPromptProvider systemPromptProvider,
+        AgentixOptions options,
+        IServiceProvider serviceProvider,
         ILogger<AgentixOrchestrator> logger)
     {
         _providerRegistry = providerRegistry;
         _channelRegistry = channelRegistry;
-        _systemPromptProvider = systemPromptProvider;
+        _options = options;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -36,6 +41,14 @@ public class AgentixOrchestrator : IAgentixOrchestrator
         
         try
         {
+            _logger.LogDebug("Processing message from {UserId}, looking for provider: {ProviderName}", 
+                           message.UserId, providerName ?? "default");
+            
+            // Log current available providers
+            var allProviders = _providerRegistry.GetAllProviders().ToList();
+            _logger.LogDebug("Currently available providers: {ProviderNames}", 
+                           string.Join(", ", allProviders.Select(p => p.Name)));
+            
             // Get the appropriate provider
             var provider = string.IsNullOrEmpty(providerName) 
                 ? _providerRegistry.GetDefaultProvider() 
@@ -47,6 +60,9 @@ public class AgentixOrchestrator : IAgentixOrchestrator
                     ? "No AI providers are registered" 
                     : $"AI provider '{providerName}' not found";
                 
+                _logger.LogError("Provider not found. Available providers: {AvailableProviders}", 
+                               string.Join(", ", allProviders.Select(p => p.Name)));
+                
                 return new AIResponse
                 {
                     Success = false,
@@ -55,23 +71,16 @@ public class AgentixOrchestrator : IAgentixOrchestrator
                 };
             }
 
-            // Build AI request
+            // Build AI request with the configured system prompt
             var aiRequest = new AIRequest
             {
                 Content = message.Content,
+                SystemPrompt = _options.SystemPrompt,
                 UserId = message.UserId,
                 ChannelId = message.ChannelId,
                 ContextId = GenerateContextId(message),
                 OriginalMessage = message
             };
-
-            // Get system prompt from the system prompt provider
-            var systemPrompt = _systemPromptProvider.GetSystemPrompt(
-                channelType: message.Channel, 
-                userId: message.UserId, 
-                contextId: aiRequest.ContextId);
-            
-            aiRequest.SystemPrompt = systemPrompt;
 
             _logger.LogInformation("Processing message from {UserId} in {Channel} using provider {Provider}", 
                                  message.UserId, message.Channel, provider.Name);
@@ -93,7 +102,7 @@ public class AgentixOrchestrator : IAgentixOrchestrator
             return new AIResponse
             {
                 Success = false,
-                ErrorMessage = $"An error occurred while processing your message: {ex.Message}",
+                ErrorMessage = "An error occurred while processing your message",
                 Type = ResponseType.Error,
                 ResponseTime = stopwatch.Elapsed
             };
@@ -109,6 +118,9 @@ public class AgentixOrchestrator : IAgentixOrchestrator
         }
 
         _logger.LogInformation("Starting Agentix orchestrator...");
+
+        // Ensure all providers and channels from DI are registered
+        await EnsureProvidersAndChannelsRegistered();
 
         // Start all registered channels
         var channelRegistry = _channelRegistry as ChannelRegistry;
@@ -205,5 +217,40 @@ public class AgentixOrchestrator : IAgentixOrchestrator
     {
         // Simple context ID generation for now - will be enhanced with context management later
         return $"{message.Channel}:{message.ChannelId}:{message.UserId}";
+    }
+
+    private async Task EnsureProvidersAndChannelsRegistered()
+    {
+        _logger.LogDebug("Starting provider and channel registration from DI...");
+        
+        // Register all AI providers from DI container
+        var providers = _serviceProvider.GetServices<IAIProvider>().ToList();
+        _logger.LogDebug("Found {ProviderCount} providers in DI container", providers.Count);
+        
+        foreach (var provider in providers)
+        {
+            _logger.LogDebug("Registering provider: {ProviderName}", provider.Name);
+            _providerRegistry.RegisterProvider(provider);
+        }
+
+        // Register all channel adapters from DI container
+        var channels = _serviceProvider.GetServices<IChannelAdapter>().ToList();
+        _logger.LogDebug("Found {ChannelCount} channels in DI container", channels.Count);
+        
+        foreach (var channel in channels)
+        {
+            _logger.LogDebug("Registering channel: {ChannelName}", channel.Name);
+            _channelRegistry.RegisterChannel(channel);
+        }
+
+        _logger.LogInformation("Registered {ProviderCount} providers and {ChannelCount} channels from DI",
+                             providers.Count, channels.Count);
+
+        // Log available providers for debugging
+        var availableProviders = _providerRegistry.GetAllProviders().ToList();
+        _logger.LogInformation("Available providers after registration: {ProviderNames}", 
+                             string.Join(", ", availableProviders.Select(p => p.Name)));
+
+        await Task.CompletedTask;
     }
 } 

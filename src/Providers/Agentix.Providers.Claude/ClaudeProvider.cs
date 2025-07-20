@@ -29,8 +29,16 @@ public class ClaudeProvider : IAIProvider
         _options = options;
         _logger = logger;
 
+        // Validate API key
+        if (string.IsNullOrWhiteSpace(_options.ApiKey))
+        {
+            throw new ArgumentException("Claude API key is required and cannot be null or empty", nameof(options));
+        }
+
         ConfigureHttpClient();
         InitializeCapabilities();
+        
+        _logger.LogInformation("Claude provider initialized with model {Model}", _options.DefaultModel);
     }
 
     public async Task<AIResponse> GenerateAsync(AIRequest request, CancellationToken cancellationToken = default)
@@ -180,6 +188,17 @@ public class ClaudeProvider : IAIProvider
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogError("Claude API error: {StatusCode} - {Content}", response.StatusCode, responseContent);
+            
+            // Handle specific error types
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new UnauthorizedAccessException("Invalid Claude API key. Please check your API key and try again.");
+            }
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                throw new UnauthorizedAccessException("Claude API key does not have permission to access this resource.");
+            }
             
             try
             {

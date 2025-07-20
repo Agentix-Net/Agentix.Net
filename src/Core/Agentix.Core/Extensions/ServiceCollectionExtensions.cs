@@ -1,5 +1,6 @@
 using Agentix.Core.Interfaces;
 using Agentix.Core.Services;
+using Agentix.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -7,19 +8,23 @@ namespace Agentix.Core.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddAgentixCore(this IServiceCollection services)
+    public static IServiceCollection AddAgentixCore(this IServiceCollection services, Action<AgentixOptions>? configure = null)
     {
+        // Configure options
+        var options = new AgentixOptions();
+        configure?.Invoke(options);
+        services.AddSingleton(options);
+        
         // Register core services
         services.AddSingleton<IProviderRegistry, ProviderRegistry>();
         services.AddSingleton<IChannelRegistry, ChannelRegistry>();
-        services.AddSingleton<ISystemPromptProvider, SystemPromptProvider>();
         services.AddSingleton<IAgentixOrchestrator, AgentixOrchestrator>();
         
         // Add logging if not already configured
         services.AddLogging(builder =>
         {
             builder.AddConsole();
-            builder.SetMinimumLevel(LogLevel.Information);
+            builder.SetMinimumLevel(LogLevel.Debug);
         });
         
         return services;
@@ -38,11 +43,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IChannelAdapter>(channel);
         return services;
     }
-    
-    public static IServiceProvider ConfigureSystemPrompts(this IServiceProvider serviceProvider, Action<ISystemPromptProvider> configure)
-    {
-        var systemPromptProvider = serviceProvider.GetRequiredService<ISystemPromptProvider>();
-        configure(systemPromptProvider);
-        return serviceProvider;
-    }
+}
+
+public class AgentixOptions
+{
+    public string SystemPrompt { get; set; } = DefaultPrompts.System;
+    public bool EnableCostTracking { get; set; } = true;
+    public int MaxConcurrentRequests { get; set; } = 10;
 } 

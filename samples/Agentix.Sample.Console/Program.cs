@@ -1,8 +1,7 @@
-﻿using Agentix.Channels.Console;
-using Agentix.Core.Extensions;
+﻿using Agentix.Core.Extensions;
+using Agentix.Providers.Claude.Extensions;
+using Agentix.Channels.Console.Extensions;
 using Agentix.Core.Interfaces;
-using Agentix.Core.Services;
-using Agentix.Providers.Claude;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,51 +12,30 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        System.Console.WriteLine("🚀 AGENTIX v2 - Starting application...");
-
-        try
+        System.Console.WriteLine("🚀 Starting Agentix Console Sample...");
+        
+        // Get Claude API key from command line, environment, or user input
+        var claudeApiKey = GetApiKeyFromArgs(args) ?? Environment.GetEnvironmentVariable("CLAUDE_API_KEY");
+        if (string.IsNullOrEmpty(claudeApiKey))
         {
-            // Check if Claude API key is provided
-            System.Console.WriteLine("🔍 Checking API key...");
-            var claudeApiKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY") ?? 
-                              GetApiKeyFromArgs(args);
-
-            System.Console.WriteLine($"🔍 API key length: {claudeApiKey?.Length ?? 0}");
-
+            System.Console.Write("Please enter your Claude API key: ");
+            claudeApiKey = System.Console.ReadLine();
             if (string.IsNullOrEmpty(claudeApiKey))
             {
-                System.Console.WriteLine("❌ Claude API key not found!");
-                System.Console.WriteLine("Please set the CLAUDE_API_KEY environment variable or pass it as argument:");
-                System.Console.WriteLine("   dotnet run -- --api-key YOUR_API_KEY");
-                System.Console.WriteLine("   or");
-                System.Console.WriteLine("   set CLAUDE_API_KEY=YOUR_API_KEY");
+                System.Console.WriteLine("❌ Claude API key is required. Exiting...");
                 return;
             }
+        }
 
-            System.Console.WriteLine("✅ API key found, creating services...");
-
-            // Create service collection
-            var services = new ServiceCollection();
-            
-            // Add logging
-            services.AddLogging(builder =>
+        // Create host builder
+        var builder = Host.CreateDefaultBuilder(args);
+        
+        // Configure services with simplified system prompt configuration
+        builder.ConfigureServices(services =>
+        {
+            services.AddAgentixCore(options =>
             {
-                builder.ClearProviders();
-                builder.AddConsole();
-                builder.SetMinimumLevel(LogLevel.Warning); // Reduce noise
-            });
-
-            // Add Agentix core services
-            services.AddAgentixCore();
-
-            // Build service provider
-            var serviceProvider = services.BuildServiceProvider();
-            
-            // Configure system prompts
-            serviceProvider.ConfigureSystemPrompts(prompts =>
-            {
-                // Set a default system prompt for the application
-                prompts.SetDefaultSystemPrompt(@"You are an expert Architecture Decision Record (ADR) assistant. You help software teams document important architectural decisions using the ADR format.
+                options.SystemPrompt = @"You are an expert Architecture Decision Record (ADR) assistant. You help software teams document important architectural decisions using the ADR format.
 
 You are knowledgeable about:
 - ADR templates and best practices (especially Michael Nygard's format)
@@ -72,88 +50,80 @@ When helping with ADRs, you:
 - Suggest relevant options and trade-offs to consider
 - Help write clear, concise, and well-structured ADRs
 - Provide examples and templates when helpful
-- Focus on documenting the 'why' behind architectural decisions");
-                
-                // Set console-specific system prompt
-                prompts.SetChannelSystemPrompt("console", @"You are an ADR (Architecture Decision Record) specialist. Be direct and practical in helping users create, review, and improve their architectural decision documentation. Keep responses focused and actionable while ensuring clarity in the decision-making process.");
-            });
-            
-            System.Console.WriteLine("✅ Services created, setting up providers and channels...");
+- Focus on documenting the 'why' behind architectural decisions
 
-            // Get registries
-            var providerRegistry = serviceProvider.GetRequiredService<IProviderRegistry>();
-            var channelRegistry = serviceProvider.GetRequiredService<IChannelRegistry>();
-            var orchestrator = serviceProvider.GetRequiredService<IAgentixOrchestrator>();
-
-            // Create and register Claude provider
-            var claudeOptions = new ClaudeOptions
+Be direct and practical in helping users create, review, and improve their architectural decision documentation. Keep responses focused and actionable while ensuring clarity in the decision-making process.";
+                options.EnableCostTracking = true;
+            })
+            .AddClaudeProvider(options =>
             {
-                ApiKey = claudeApiKey,
-                DefaultModel = "claude-3-haiku-20240307",
-                MaxTokens = 1000,
-                Temperature = 0.7f
-            };
-            
-            var providerLogger = serviceProvider.GetRequiredService<ILogger<ClaudeProvider>>();
-            var claudeProvider = new ClaudeProvider(claudeOptions, providerLogger);
-            providerRegistry.RegisterProvider(claudeProvider);
-            
-            System.Console.WriteLine("✅ Claude provider registered");
+                options.ApiKey = claudeApiKey;
+                options.DefaultModel = "claude-3-haiku-20240307";
+                options.Temperature = 0.7f;
+                options.MaxTokens = 1000;
+            })
+            .AddConsoleChannel();
+        });
 
-            // Create and register console channel
-            var channelLogger = serviceProvider.GetRequiredService<ILogger<ConsoleChannelAdapter>>();
-            var consoleChannel = new ConsoleChannelAdapter(orchestrator, channelLogger);
-            channelRegistry.RegisterChannel(consoleChannel);
-            
-            System.Console.WriteLine("✅ Console channel registered");
+        // Build and run the application
+        var app = builder.Build();
 
-            // Verify registration
-            var allChannels = channelRegistry.GetAllChannels();
-            System.Console.WriteLine($"🔍 Total channels registered: {allChannels.Count()}");
-            
-            foreach (var channel in allChannels)
-            {
-                System.Console.WriteLine($"   - {channel.Name} ({channel.ChannelType})");
-            }
+        // Get the orchestrator and start the application
+        var orchestrator = app.Services.GetRequiredService<IAgentixOrchestrator>();
+        await orchestrator.StartAsync();
 
-            System.Console.WriteLine();
-            System.Console.WriteLine("📝 System Prompt Feature Configured:");
-            System.Console.WriteLine("   ✅ Default system prompt set for AI assistant behavior");
-            System.Console.WriteLine("   ✅ Console-specific system prompt configured");
-            System.Console.WriteLine("   The AI will now respond with the configured personality and context.");
-            System.Console.WriteLine();
+        System.Console.WriteLine("✅ Agentix Console ready! You're talking to an ADR specialist.");
+        System.Console.WriteLine("💡 Try asking: 'Help me create an ADR for choosing a database'");
+        System.Console.WriteLine("📝 Type your messages or '/quit' to exit.");
+        System.Console.WriteLine();
 
-            // Get and start the console channel
-            var foundChannel = channelRegistry.GetChannel("console");
-            if (foundChannel is ConsoleChannelAdapter consoleAdapter)
-            {
-                System.Console.WriteLine("✅ Console channel found, starting...");
-                await consoleAdapter.StartAsync();
-                
-                // Wait for the console channel to stop (when user types /quit)
-                while (consoleAdapter.IsRunning)
-                {
-                    await Task.Delay(1000);
-                }
-                
-                System.Console.WriteLine("👋 Console channel stopped");
-            }
-            else
-            {
-                System.Console.WriteLine("❌ Console channel still not found!");
-            }
-        }
-        catch (Exception ex)
+        // Main conversation loop
+        while (true)
         {
-            System.Console.WriteLine($"❌ Application error: {ex.GetType().Name}: {ex.Message}");
-            if (ex.InnerException != null)
+            System.Console.Write("You: ");
+            var input = System.Console.ReadLine();
+            
+            if (string.IsNullOrEmpty(input))
+                continue;
+                
+            if (input.ToLowerInvariant() == "/quit")
+                break;
+
+            try
             {
-                System.Console.WriteLine($"   Inner exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                var message = new Agentix.Core.Models.IncomingMessage
+                {
+                    Content = input,
+                    UserId = "console-user",
+                    ChannelId = "console",
+                    Channel = "console"
+                };
+
+                var response = await orchestrator.ProcessMessageAsync(message, CancellationToken.None);
+                
+                if (response.Success)
+                {
+                    System.Console.WriteLine($"Assistant: {response.Content}");
+                    
+                    if (response.Usage.TotalTokens > 0)
+                    {
+                        System.Console.WriteLine($"📊 Tokens used: {response.Usage.InputTokens} in, {response.Usage.OutputTokens} out (${response.EstimatedCost:F4})");
+                    }
+                }
+                else
+                {
+                    System.Console.WriteLine($"❌ Error: {response.ErrorMessage}");
+                }
             }
-            System.Console.WriteLine($"   Stack trace: {ex.StackTrace}");
-            System.Console.WriteLine("Press any key to exit...");
-            System.Console.ReadKey();
+            catch (Exception ex)
+            {
+                System.Console.WriteLine($"❌ Unexpected error: {ex.Message}");
+            }
+            
+            System.Console.WriteLine();
         }
+
+        System.Console.WriteLine("�� Goodbye!");
     }
 
     static string? GetApiKeyFromArgs(string[] args)

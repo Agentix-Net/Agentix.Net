@@ -134,7 +134,7 @@ services.AddAgentixCore()
 ```csharp
 services.AddAgentixCore(options =>
 {
-    options.DefaultSystemPrompt = "You are a helpful assistant specialized in .NET development.";
+    options.SystemPrompt = "You are a helpful assistant specialized in .NET development.";
     options.EnableCostTracking = true;
     options.MaxConcurrentRequests = 10;
 })
@@ -154,7 +154,7 @@ services.AddAgentixCore(options =>
 ```json
 {
   "Agentix": {
-    "DefaultSystemPrompt": "You are a helpful AI assistant.",
+    "SystemPrompt": "You are a helpful AI assistant.",
     "EnableCostTracking": true
   },
   "Claude": {

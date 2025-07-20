@@ -1,210 +1,93 @@
 # Agentix Console Sample
 
-This is a sample console application demonstrating the Agentix framework with Claude AI provider.
+This sample demonstrates how to create a simple console application using the Agentix framework with Claude AI integration.
 
-## Prerequisites
+## Features
+
+- **Console Interface**: Direct command-line interaction with Claude AI
+- **System Prompt Customization**: Configure the AI as an ADR (Architecture Decision Record) specialist
+- **Cost Tracking**: Real-time token usage and cost estimation
+- **Error Handling**: Robust error handling and user feedback
+
+## Getting Started
+
+### Prerequisites
 
 - .NET 8.0 or later
 - Claude API key from Anthropic
 
-## Getting Started
+### Setup
 
-1. **Get a Claude API Key**
+1. **Get your Claude API key**:
    - Sign up at [Anthropic Console](https://console.anthropic.com/)
-   - Create an API key in your account settings
+   - Create a new API key
 
-2. **Set your API key** (choose one method):
+2. **Run the application**:
    
-   **Option 1: Environment Variable**
+   **Option 1: Command line argument**
    ```bash
-   # Windows (Command Prompt)
-   set CLAUDE_API_KEY=your_api_key_here
-   
-   # Windows (PowerShell)
-   $env:CLAUDE_API_KEY="your_api_key_here"
-   
-   # macOS/Linux
-   export CLAUDE_API_KEY=your_api_key_here
+   cd samples/Agentix.Sample.Console
+   dotnet run -- --api-key your-claude-api-key-here
    ```
    
-   **Option 2: Command Line Argument**
+   **Option 2: Environment variable**
    ```bash
-   dotnet run -- --api-key your_api_key_here
-   ```
-
-3. **Run the application**
-   ```bash
+   set CLAUDE_API_KEY=your-claude-api-key-here
    dotnet run
    ```
+   
+   **Option 3: Interactive prompt**
+   ```bash
+   dotnet run
+   # You'll be prompted to enter your API key
+   ```
 
-## Usage
-
-Once the application starts, you'll see a welcome message and a prompt:
-
-```
-🚀 Welcome to Agentix Console!
-Type your messages to chat with AI. Commands:
-  /help - Show help
-  /quit - Exit the application
-
-YourUsername>
-```
-
-### Available Commands
-
-- `/help` - Show help information
-- `/quit` or `/exit` - Exit the application
-- Type any message to chat with Claude AI
-
-### Example Session
-
-```
-YourUsername> How do I create a simple HTTP client in C#?
-🤖 Here's a simple way to create an HTTP client in C#:
-
-```csharp
-using var client = new HttpClient();
-
-// GET request
-string response = await client.GetStringAsync("https://api.example.com/data");
-
-// POST request with JSON
-var jsonContent = JsonSerializer.Serialize(new { name = "John", age = 30 });
-var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-var postResponse = await client.PostAsync("https://api.example.com/users", content);
-```
-
-For dependency injection in ASP.NET Core:
-```csharp
-builder.Services.AddHttpClient();
-```
-
-   📊 Tokens: 22/143 | Cost: $0.0003 | Time: 756ms | Provider: claude
-
-YourUsername> What's the best practice for disposing HttpClient?
-🤖 Use `using var client = new HttpClient()` for short-lived clients, or register as singleton via DI (`AddHttpClient()`) for better performance and connection pooling.
-
-   📊 Tokens: 18/45 | Cost: $0.0001 | Time: 432ms | Provider: claude
-
-YourUsername> /quit
-🤖 Goodbye! 👋
-```
-
-## Features Demonstrated
-
-This sample shows:
-
-- ✅ **Modular Architecture** - Core, Provider, and Channel packages working together
-- ✅ **Dependency Injection** - Services automatically registered and wired up
-- ✅ **AI Provider Abstraction** - Easy to swap Claude for other providers
-- ✅ **Channel Abstraction** - Console channel with commands and formatting
-- ✅ **Custom System Prompts** - Users can set personalized AI behavior and context
-- ✅ **Cost Tracking** - Token usage and cost estimation
-- ✅ **Error Handling** - Graceful error handling and user feedback
-- ✅ **Logging** - Structured logging throughout the system
-
-## System Prompt Configuration
-
-The Agentix framework supports custom system prompts, allowing SDK developers to configure AI behavior:
-
-### What are System Prompts?
-
-System prompts are instructions that define the AI's role, personality, and behavior. They set the context for how the AI should respond to user messages.
-
-### How to Configure (for SDK Developers)
-
-System prompts are configured when setting up the Agentix services:
-
-```csharp
-// Build service provider
-var serviceProvider = services.BuildServiceProvider();
-
-// Configure system prompts
-serviceProvider.ConfigureSystemPrompts(prompts =>
-{
-    // Set default system prompt for all interactions
-    prompts.SetDefaultSystemPrompt("You are a helpful AI assistant...");
-    
-    // Set channel-specific prompts
-    prompts.SetChannelSystemPrompt("console", "You are concise and direct...");
-    prompts.SetChannelSystemPrompt("slack", "You are friendly and use emojis...");
-    
-    // Set user-specific prompts
-    prompts.SetUserSystemPrompt("admin", "You are a technical expert...");
-});
-```
-
-### System Prompt Priority
-
-The framework uses this priority order:
-1. **User-specific prompts** (highest priority)
-2. **Channel-specific prompts**
-3. **Default prompt** (fallback)
-
-### Example Configurations
-
-```csharp
-// Coding Assistant
-prompts.SetDefaultSystemPrompt(@"
-You are an expert software engineer specializing in .NET and C#. 
-Provide practical code examples and follow best practices.
-Be concise but thorough in your explanations.");
-
-// Support Bot
-prompts.SetChannelSystemPrompt("support", @"
-You are a helpful customer support assistant.
-Be empathetic, patient, and solution-focused.
-Always ask clarifying questions when needed.");
-
-// Executive Assistant
-prompts.SetUserSystemPrompt("ceo", @"
-You are an executive assistant for busy leadership.
-Provide brief, actionable summaries and recommendations.
-Focus on business impact and strategic insights.");
-```
-
-### Configuration Tips
-
-- Keep prompts clear and specific
-- Define the AI's expertise area and role
-- Specify the desired response style (concise, detailed, etc.)
-- Include formatting and tone preferences
-- Consider the target audience for each channel/user
+3. **Start chatting**:
+   ```
+   You: Help me create an ADR for choosing a database
+   Assistant: I'd be happy to help you create an ADR for choosing a database...
+   ```
 
 ## Configuration
 
-The sample uses these default settings:
+The sample shows how to configure Agentix with a custom system prompt directly in the service registration:
 
-- **Model**: `claude-3-haiku-20240307` (fastest and most cost-effective)
-- **Max Tokens**: 1000
-- **Temperature**: 0.7
-- **Timeout**: 30 seconds
+```csharp
+builder.ConfigureServices(services =>
+{
+    services.AddAgentixCore(options =>
+    {
+        options.SystemPrompt = @"You are an expert Architecture Decision Record (ADR) assistant...";
+        options.EnableCostTracking = true;
+    })
+    .AddClaudeProvider(options =>
+    {
+        options.ApiKey = claudeApiKey;
+        options.DefaultModel = "claude-3-haiku-20240307";
+        options.Temperature = 0.7f;
+        options.MaxTokens = 1000;
+    })
+    .AddConsoleChannel();
+});
+```
 
-You can modify these in the `Program.cs` file if needed.
+## What's Happening
+
+1. **Configuration**: The framework is configured with Claude as the AI provider and Console as the communication channel
+2. **System Prompt**: The AI is configured as an ADR specialist with specific knowledge and behavior
+3. **Orchestration**: The `IAgentixOrchestrator` coordinates between the channel and provider
+4. **Message Flow**: User input → Console Channel → Orchestrator → Claude Provider (with system prompt) → Response back to user
+
+## System Prompt Features
+
+This sample demonstrates how to configure a single system prompt that defines the AI's role and behavior. The system prompt:
+
+- Makes the AI an expert in Architecture Decision Records
+- Provides specific knowledge domains and capabilities
+- Sets the tone and approach for interactions
 
 ## Next Steps
 
-To extend this sample:
-
-1. **Add more providers** - OpenAI, Azure OpenAI, etc.
-2. **Add tools** - Web search, file operations, APIs
-3. **Add other channels** - Slack, Teams, Web API
-4. **Add context memory** - Conversation history and state
-5. **Add RAG capabilities** - Document search and retrieval
-
-## Troubleshooting
-
-### Common Issues
-
-**"Claude API key not found"**
-- Make sure you've set the API key using one of the methods above
-- Verify the API key is valid in the Anthropic Console
-
-**"Error generating response with Claude"**
-- Check your internet connection
-- Verify your API key has sufficient credits
-- Check the logs for specific error details
-
-**Application crashes on startup**
-- Ensure all NuGet packages are restored: `dotnet restore`
-- Make sure you're using .NET 8.0 or later: `dotnet --version` 
+- Try the [Web API sample](../Agentix.Sample.Web/) for HTTP-based interactions
+- Explore the [Multi-Provider sample](../Agentix.Sample.MultiProvider/) to see provider switching
+- Check out [Channel examples](../Agentix.Sample.Slack/) for Slack integration
