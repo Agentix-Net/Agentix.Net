@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup>
+    <!-- Centralized version management -->
+    <VersionPrefix>0.0.1</VersionPrefix>
+    <VersionSuffix Condition="'$(VersionSuffix)' == '' AND '$(Configuration)' == 'Debug'">preview</VersionSuffix>
+    
+    <!-- Common package properties -->
+    <Authors>Agentix</Authors>
+    <Company>Agentix</Company>
+    <Copyright>Copyright © Agentix 2024</Copyright>
+    <RepositoryUrl>https://github.com/agentix/agentix.net</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://github.com/agentix/agentix.net</PackageProjectUrl>
+    
+    <!-- Build settings -->
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
+    <!-- NuGet packaging -->
+    <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+</Project> 

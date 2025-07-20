@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Agentix.Providers.Claude</PackageId>
+    <Authors>Agentix</Authors>
+    <Description>Anthropic Claude AI provider for Agentix AI agent framework</Description>
+    <PackageTags>ai;agents;claude;anthropic;provider;agentix</PackageTags>
+    <RepositoryUrl>https://github.com/agentix/agentix.net</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Agentix.Core\Agentix.Core.csproj" />
+  </ItemGroup>
+
+</Project>
