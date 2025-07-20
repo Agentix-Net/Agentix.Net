@@ -11,17 +11,18 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        System.Console.WriteLine("🚀 Starting Agentix Console Sample...");
+        Console.WriteLine("🚀 Starting Agentix Console Sample...");
         
         // Get Claude API key from command line, environment, or user input
-        var claudeApiKey = GetApiKeyFromArgs(args) ?? Environment.GetEnvironmentVariable("CLAUDE_API_KEY");
+        var claudeApiKey = GetConfigValue("CLAUDE_API_KEY", args, "--claude-key");
+        
         if (string.IsNullOrEmpty(claudeApiKey))
         {
-            System.Console.Write("Please enter your Claude API key: ");
-            claudeApiKey = System.Console.ReadLine();
+            Console.Write("Please enter your Claude API key: ");
+            claudeApiKey = Console.ReadLine();
             if (string.IsNullOrEmpty(claudeApiKey))
             {
-                System.Console.WriteLine("❌ Claude API key is required. Exiting...");
+                Console.WriteLine("❌ Claude API key is required. Set CLAUDE_API_KEY environment variable or use --claude-key");
                 return;
             }
         }
@@ -34,24 +35,21 @@ class Program
             // Configure Agentix with simplified fluent API
             services.AddAgentix(options =>
             {
-                options.SystemPrompt = @"You are an expert Architecture Decision Record (ADR) assistant. You help software teams document important architectural decisions using the ADR format.
+                options.SystemPrompt = @"You are a helpful AI assistant integrated with a console application. You can:
 
-You are knowledgeable about:
-- ADR templates and best practices (especially Michael Nygard's format)
-- Software architecture patterns and trade-offs
-- Decision documentation frameworks
-- Stakeholder communication in technical decisions
-- Architectural analysis and decision-making processes
+- Answer questions and provide information
+- Help with problem-solving and analysis
+- Assist with coding and technical topics
+- Provide explanations and clarifications
+- Generate ideas and suggestions
 
-When helping with ADRs, you:
-- Guide users through the standard ADR structure (Title, Status, Context, Decision, Consequences)
-- Ask clarifying questions to understand the architectural problem and constraints
-- Suggest relevant options and trade-offs to consider
-- Help write clear, concise, and well-structured ADRs
-- Provide examples and templates when helpful
-- Focus on documenting the 'why' behind architectural decisions
+When responding in the console:
+- Keep responses clear and well-formatted
+- Use appropriate structure for readability
+- Be concise but informative
+- Provide helpful examples when relevant
 
-Be direct and practical in helping users create, review, and improve their architectural decision documentation. Keep responses focused and actionable while ensuring clarity in the decision-making process.";
+Feel free to use emojis to make conversations more engaging! 😊";
                 options.EnableCostTracking = true;
             })
             .AddClaudeProvider(options =>
@@ -59,34 +57,42 @@ Be direct and practical in helping users create, review, and improve their archi
                 options.ApiKey = claudeApiKey;
                 options.DefaultModel = "claude-3-haiku-20240307";
                 options.Temperature = 0.7f;
-                options.MaxTokens = 1000;
+                options.MaxTokens = 2000;
             })
             .AddConsoleChannel(options =>
             {
-                options.WelcomeMessage = "✅ You're talking to an ADR specialist.\n💡 Try asking: 'Help me create an ADR for choosing a database'";
-                options.ShowMetadata = true;
+                options.WelcomeMessage = "✅ Console AI Assistant is ready!\n💡 Try asking: 'How can you help me?' or 'Explain dependency injection in .NET'";
+                options.ShowMetadata = false; // Set to true for debugging
             });
         });
 
-        System.Console.WriteLine("✅ Agentix Console bot configured successfully!");
-        System.Console.WriteLine("💬 Start typing to chat with the ADR assistant...");
-        System.Console.WriteLine("   The AI will now respond with the configured personality and context.");
-        System.Console.WriteLine();
-        System.Console.WriteLine("Press Ctrl+C to stop the bot");
+        Console.WriteLine("✅ Agentix Console bot configured successfully!");
+        Console.WriteLine("💬 Start typing to chat with the AI assistant...");
+        Console.WriteLine();
+        Console.WriteLine("Press Ctrl+C to stop the bot");
 
         // Build and run Agentix - simplified startup!
         await builder.BuildAndRunAgentixAsync();
     }
 
-    static string? GetApiKeyFromArgs(string[] args)
+    static string? GetConfigValue(string envVar, string[] args, string argName)
     {
+        // First try environment variable
+        var value = Environment.GetEnvironmentVariable(envVar);
+        if (!string.IsNullOrEmpty(value))
+        {
+            return value;
+        }
+
+        // Then try command line arguments
         for (int i = 0; i < args.Length - 1; i++)
         {
-            if (args[i] == "--api-key" || args[i] == "-k")
+            if (args[i] == argName)
             {
                 return args[i + 1];
             }
         }
+
         return null;
     }
 }

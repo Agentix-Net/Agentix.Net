@@ -125,7 +125,7 @@ You can respond to direct messages and mentions in channels. Feel free to use em
         Console.WriteLine();
         Console.WriteLine("Press Ctrl+C to stop the bot");
 
-        // Build and run Agentix
+        // Build and run Agentix - simplified startup!
         await builder.BuildAndRunAgentixAsync();
     }
 

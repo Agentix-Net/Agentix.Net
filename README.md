@@ -15,14 +15,14 @@ Install the core package and your desired providers/channels via NuGet:
 dotnet add package Agentix.Core
 
 # AI Providers (choose one or more)
-dotnet add package Agentix.Providers.Claude
-dotnet add package Agentix.Providers.OpenAI       # Coming soon
-dotnet add package Agentix.Providers.AzureOpenAI  # Coming soon
+dotnet add package Agentix.Providers.Claude       # ✅ Available now
+dotnet add package Agentix.Providers.OpenAI       # 🚧 Coming soon
+dotnet add package Agentix.Providers.AzureOpenAI  # 🚧 Coming soon
 
-# Channels (choose based on your application type)
-dotnet add package Agentix.Channels.Console
-dotnet add package Agentix.Channels.Slack         # Coming soon
-dotnet add package Agentix.Channels.WebApi        # Coming soon
+# Channels (choose based on your application type)  
+dotnet add package Agentix.Channels.Console       # ✅ Available now
+dotnet add package Agentix.Channels.Slack         # ✅ Available now
+dotnet add package Agentix.Channels.WebApi        # 🚧 Coming soon
 ```
 
 ### Simple Console Application
@@ -87,14 +87,14 @@ app.Run();
 - **Agentix.Core** - Core abstractions, orchestration, and dependency injection
 
 ### AI Providers
-- **Agentix.Providers.Claude** ✅ - Anthropic Claude integration
+- **Agentix.Providers.Claude** ✅ - Anthropic Claude integration ([Documentation](src/Providers/Agentix.Providers.Claude/README.md))
 - **Agentix.Providers.OpenAI** 🚧 - OpenAI GPT models
 - **Agentix.Providers.AzureOpenAI** 🚧 - Azure OpenAI Service
 - **Agentix.Providers.Ollama** 🚧 - Local model hosting
 
 ### Communication Channels
-- **Agentix.Channels.Console** ✅ - Console/terminal interface
-- **Agentix.Channels.Slack** 🚧 - Slack bot integration
+- **Agentix.Channels.Console** ✅ - Console/terminal interface ([Documentation](src/Channels/Agentix.Channels.Console/README.md))
+- **Agentix.Channels.Slack** ✅ - Slack bot integration ([Documentation](src/Channels/Agentix.Channels.Slack/README.md))
 - **Agentix.Channels.Teams** 🚧 - Microsoft Teams integration
 - **Agentix.Channels.WebApi** 🚧 - HTTP REST API interface
 
@@ -278,9 +278,12 @@ Console.WriteLine($"Running channels: {status.RunningChannels}");
 
 ## 📖 Documentation
 
-- [API Reference](https://docs.agentix.net/api) - Complete API documentation
-- [Samples](samples/) - Example applications and use cases
-- [Architecture Guide](docs/agentix_design_document.md) - Detailed framework design
+- **[Core Framework](src/Core/Agentix.Core/README.md)** - Core abstractions and interfaces
+- **[Claude Provider](src/Providers/Agentix.Providers.Claude/README.md)** - Anthropic Claude integration
+- **[Console Channel](src/Channels/Agentix.Channels.Console/README.md)** - Terminal interface
+- **[Slack Channel](src/Channels/Agentix.Channels.Slack/README.md)** - Slack bot integration
+- **[Samples](samples/)** - Example applications and use cases
+- **[Architecture Guide](docs/agentix_design_document.md)** - Detailed framework design
 
 ## 🤝 Community
 
@@ -295,10 +298,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🗺️ Roadmap
 
 - ✅ Core framework with provider/channel abstraction
-- ✅ Claude provider implementation
+- ✅ Claude provider implementation  
 - ✅ Console channel implementation
+- ✅ Slack channel implementation
 - 🚧 OpenAI provider
-- 🚧 Slack and Teams channels
+- 🚧 Teams channel
 - 🚧 Context memory system
 - 🚧 Tool/function calling support
 - 🚧 RAG engine integration
