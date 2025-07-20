@@ -1,4 +1,5 @@
-﻿using Agentix.Core.Extensions;
+﻿using System;
+using Agentix.Core.Extensions;
 using Agentix.Providers.Claude.Extensions;
 using Agentix.Channels.Console.Extensions;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,18 +12,18 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        Console.WriteLine("🚀 Starting Agentix Console Sample...");
+        System.Console.WriteLine("🚀 Starting Agentix Console Sample...");
         
         // Get Claude API key from command line, environment, or user input
         var claudeApiKey = GetConfigValue("CLAUDE_API_KEY", args, "--claude-key");
         
         if (string.IsNullOrEmpty(claudeApiKey))
         {
-            Console.Write("Please enter your Claude API key: ");
-            claudeApiKey = Console.ReadLine();
+            System.Console.Write("Please enter your Claude API key: ");
+            claudeApiKey = System.Console.ReadLine();
             if (string.IsNullOrEmpty(claudeApiKey))
             {
-                Console.WriteLine("❌ Claude API key is required. Set CLAUDE_API_KEY environment variable or use --claude-key");
+                System.Console.WriteLine("❌ Claude API key is required. Set CLAUDE_API_KEY environment variable or use --claude-key");
                 return;
             }
         }
@@ -66,10 +67,10 @@ Feel free to use emojis to make conversations more engaging! 😊";
             });
         });
 
-        Console.WriteLine("✅ Agentix Console bot configured successfully!");
-        Console.WriteLine("💬 Start typing to chat with the AI assistant...");
-        Console.WriteLine();
-        Console.WriteLine("Press Ctrl+C to stop the bot");
+        System.Console.WriteLine("✅ Agentix Console bot configured successfully!");
+        System.Console.WriteLine("💬 Start typing to chat with the AI assistant...");
+        System.Console.WriteLine();
+        System.Console.WriteLine("Press Ctrl+C to stop the bot");
 
         // Build and run Agentix - simplified startup!
         await builder.BuildAndRunAgentixAsync();
