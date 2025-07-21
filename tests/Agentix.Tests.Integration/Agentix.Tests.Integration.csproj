@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Core\Agentix.Core\Agentix.Core.csproj" />
+    <ProjectReference Include="..\..\src\Context\Agentix.Context.InMemory\Agentix.Context.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\Providers\Agentix.Providers.Claude\Agentix.Providers.Claude.csproj" />
+    <ProjectReference Include="..\..\src\Channels\Agentix.Channels.Console\Agentix.Channels.Console.csproj" />
+    <ProjectReference Include="..\..\src\Channels\Agentix.Channels.Slack\Agentix.Channels.Slack.csproj" />
+  </ItemGroup>
+
+</Project> 
