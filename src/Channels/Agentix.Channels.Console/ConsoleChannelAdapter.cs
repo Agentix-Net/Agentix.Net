@@ -4,7 +4,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Agentix.Channels.Console;
 
-public class ConsoleChannelAdapter : IChannelAdapter
+/// <summary>
+/// Console channel adapter that provides an interactive command-line interface for AI conversations.
+/// Enables direct terminal interaction with AI agents through a text-based chat interface.
+/// </summary>
+/// <remarks>
+/// This channel adapter is ideal for development, testing, and building CLI applications.
+/// It supports built-in commands like /help and /quit, displays optional metadata
+/// such as token usage and costs, and handles graceful shutdown.
+/// </remarks>
+public sealed class ConsoleChannelAdapter : IChannelAdapter
 {
     private readonly IAgentixOrchestrator _orchestrator;
     private readonly ILogger<ConsoleChannelAdapter> _logger;
@@ -12,15 +21,48 @@ public class ConsoleChannelAdapter : IChannelAdapter
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _runningTask;
 
+    /// <summary>
+    /// Gets the unique name identifier for this channel adapter.
+    /// </summary>
+    /// <value>Always returns "console".</value>
     public string Name => "console";
+    
+    /// <summary>
+    /// Gets the type of channel this adapter handles.
+    /// </summary>
+    /// <value>Always returns "console".</value>
     public string ChannelType => "console";
+    
+    /// <summary>
+    /// Gets a value indicating whether this channel is currently running and accepting input.
+    /// </summary>
+    /// <value>True if the console loop is active and processing user input; otherwise, false.</value>
     public bool IsRunning { get; private set; }
 
-    // Console has basic capabilities
+    /// <summary>
+    /// Gets a value indicating whether this channel supports rich content such as formatting or images.
+    /// </summary>
+    /// <value>Always returns false. The console channel only supports plain text.</value>
     public bool SupportsRichContent => false;
+    
+    /// <summary>
+    /// Gets a value indicating whether this channel supports file uploads from users.
+    /// </summary>
+    /// <value>Always returns false. The console channel does not support file uploads.</value>
     public bool SupportsFileUploads => false;
+    
+    /// <summary>
+    /// Gets a value indicating whether this channel supports interactive elements such as buttons.
+    /// </summary>
+    /// <value>Always returns false. The console channel only supports text-based interaction.</value>
     public bool SupportsInteractiveElements => false;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConsoleChannelAdapter"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The Agentix orchestrator for processing AI requests.</param>
+    /// <param name="logger">Logger instance for diagnostic and error information.</param>
+    /// <param name="options">Configuration options for the console channel. If null, default options are used.</param>
     public ConsoleChannelAdapter(
         IAgentixOrchestrator orchestrator, 
         ILogger<ConsoleChannelAdapter> logger,
@@ -31,12 +73,28 @@ public class ConsoleChannelAdapter : IChannelAdapter
         _options = options ?? new ConsoleChannelOptions();
     }
 
+    /// <summary>
+    /// Determines whether this channel adapter can handle the specified message.
+    /// </summary>
+    /// <param name="message">The incoming message to evaluate.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is true if the message is from the console channel; otherwise, false.</returns>
     public Task<bool> CanHandleAsync(IncomingMessage message)
     {
         // Console channel can handle any text-based message
         return Task.FromResult(message.Channel == ChannelType || message.Channel == "console");
     }
 
+    /// <summary>
+    /// Processes an incoming message and coordinates with the AI provider to generate a response.
+    /// </summary>
+    /// <param name="message">The incoming message to process.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the channel response.</returns>
+    /// <remarks>
+    /// This method handles built-in commands like /help and /quit, and forwards other messages
+    /// to the AI orchestrator for processing. Built-in commands are processed locally without
+    /// involving the AI provider.
+    /// </remarks>
     public async Task<ChannelResponse> ProcessAsync(IncomingMessage message, CancellationToken cancellationToken = default)
     {
         try
@@ -97,6 +155,18 @@ public class ConsoleChannelAdapter : IChannelAdapter
         }
     }
 
+    /// <summary>
+    /// Sends an AI response to the console output.
+    /// </summary>
+    /// <param name="response">The AI response to display.</param>
+    /// <param name="context">The message context containing routing and metadata information.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous send operation.</returns>
+    /// <remarks>
+    /// This method formats and displays the AI response in the console with appropriate colors.
+    /// If <see cref="ConsoleChannelOptions.ShowMetadata"/> is enabled, it also displays
+    /// token usage and cost information.
+    /// </remarks>
     public Task SendResponseAsync(AIResponse response, MessageContext context, CancellationToken cancellationToken = default)
     {
         if (!response.Success)
@@ -117,6 +187,16 @@ public class ConsoleChannelAdapter : IChannelAdapter
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Starts the console channel and begins the interactive input loop.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous start operation.</returns>
+    /// <remarks>
+    /// This method displays a welcome message, starts the console input loop in a background task,
+    /// and begins accepting user input. The console remains active until <see cref="StopAsync"/> is called
+    /// or the user enters a quit command.
+    /// </remarks>
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (IsRunning)
@@ -126,7 +206,7 @@ public class ConsoleChannelAdapter : IChannelAdapter
         }
 
         _logger.LogInformation("Starting console channel...");
-        
+
         _cancellationTokenSource = new CancellationTokenSource();
         IsRunning = true;
 
@@ -138,6 +218,15 @@ public class ConsoleChannelAdapter : IChannelAdapter
         _logger.LogInformation("Console channel started and ready for interaction");
     }
 
+    /// <summary>
+    /// Stops the console channel and terminates the interactive input loop.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous stop operation.</returns>
+    /// <remarks>
+    /// This method gracefully shuts down the console input loop, displays a goodbye message,
+    /// and cleans up resources. Any pending user input will be cancelled.
+    /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         if (!IsRunning)
@@ -319,12 +408,69 @@ system prompts that define its personality and expertise areas.";
     }
 }
 
-public class ConsoleChannelOptions
+/// <summary>
+/// Configuration options for the console channel adapter.
+/// Contains settings for display behavior, user interaction, and session management.
+/// </summary>
+public sealed class ConsoleChannelOptions
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether to show metadata such as token usage and costs after each AI response.
+    /// </summary>
+    /// <value>True to display token counts and cost information; otherwise, false. Defaults to true.</value>
+    /// <remarks>
+    /// When enabled, the console will show information like "📊 Tokens used: 45 in, 128 out ($0.0023)"
+    /// after each AI response to help track usage and costs.
+    /// </remarks>
     public bool ShowMetadata { get; set; } = true;
+    
+    /// <summary>
+    /// Gets or sets the prompt string displayed before user input in the console.
+    /// </summary>
+    /// <value>The prompt string. Defaults to "> ".</value>
+    /// <remarks>
+    /// This is the text shown to indicate where the user should type their input.
+    /// Common examples include "> ", "$ ", or "Assistant: ".
+    /// </remarks>
     public string Prompt { get; set; } = "> ";
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether to clear the console screen when the channel starts.
+    /// </summary>
+    /// <value>True to clear the console on startup; otherwise, false. Defaults to true.</value>
+    /// <remarks>
+    /// Clearing the console provides a clean slate for the AI conversation.
+    /// Disable this if you want to preserve existing console content.
+    /// </remarks>
     public bool ClearOnStart { get; set; } = true;
+    
+    /// <summary>
+    /// Gets or sets a custom welcome message to display when the console channel starts.
+    /// </summary>
+    /// <value>The welcome message text, or null to use the default message.</value>
+    /// <remarks>
+    /// If null, a default welcome message will be shown. Set to an empty string
+    /// to suppress the welcome message entirely. Supports multi-line text and emoji.
+    /// </remarks>
     public string? WelcomeMessage { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the default user ID to associate with console messages.
+    /// </summary>
+    /// <value>The user ID string, or null to use the current system user.</value>
+    /// <remarks>
+    /// This ID is used for conversation context and tracking. If null,
+    /// the current environment username is used automatically.
+    /// </remarks>
     public string? DefaultUserId { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the default user display name for console messages.
+    /// </summary>
+    /// <value>The user display name, or null to use the current system user.</value>
+    /// <remarks>
+    /// This name is used for display purposes and logging. If null,
+    /// the current environment username is used automatically.
+    /// </remarks>
     public string? DefaultUserName { get; set; }
 } 

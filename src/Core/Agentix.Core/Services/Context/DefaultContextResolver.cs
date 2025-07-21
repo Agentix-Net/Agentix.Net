@@ -5,9 +5,10 @@ using Agentix.Core.Models;
 namespace Agentix.Core.Services.Context;
 
 /// <summary>
-/// Default implementation of context resolver with channel-specific strategies
+/// Default implementation of context resolver with channel-specific strategies.
+/// This is an internal implementation that users should not depend on directly.
 /// </summary>
-public class DefaultContextResolver : IContextResolver
+internal class DefaultContextResolver : IContextResolver
 {
     public string ResolveContextId(IncomingMessage message)
     {

@@ -6,9 +6,15 @@ using Agentix.Core.Models;
 namespace Agentix.Context.InMemory;
 
 /// <summary>
-/// In-memory implementation of conversation context
+/// Internal in-memory implementation of conversation context interface.
+/// Provides thread-safe storage for conversation messages, key-value data, and tool results.
 /// </summary>
-public class InMemoryConversationContext : IConversationContext
+/// <remarks>
+/// This implementation uses concurrent collections to ensure thread safety and automatically
+/// manages memory by limiting the number of stored messages and tool results. It includes
+/// automatic expiration handling and data cleanup mechanisms.
+/// </remarks>
+internal class InMemoryConversationContext : IConversationContext
 {
     private readonly ConcurrentQueue<ContextMessage> _messages = new();
     private readonly ConcurrentDictionary<string, ContextData> _data = new();

@@ -2,7 +2,10 @@ using Agentix.Core.Models;
 
 namespace Agentix.Core.Helpers;
 
-public static class ContextHelpers
+/// <summary>
+/// Internal utility class for context-related helper methods.
+/// </summary>
+internal static class ContextHelpers
 {
     /// <summary>
     /// Generates a simple context ID for message processing.
