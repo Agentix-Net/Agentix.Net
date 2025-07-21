@@ -22,7 +22,6 @@ public class FrameworkStartupTests
         builder.ConfigureServices(services =>
         {
             services.AddAgentix()
-                .AddInMemoryContext()
                 .AddProvider<MockAIProvider>()
                 .AddChannel<MockChannelAdapter>();
         });
@@ -47,7 +46,6 @@ public class FrameworkStartupTests
         builder.ConfigureServices(services =>
         {
             services.AddAgentix()
-                .AddInMemoryContext()
                 .AddProvider<MockAIProvider>()
                 .AddChannel<MockChannelAdapter>();
         });
@@ -72,7 +70,6 @@ public class FrameworkStartupTests
         builder.ConfigureServices(services =>
         {
             services.AddAgentix()
-                .AddInMemoryContext()
                 .AddProvider<MockAIProvider>()
                 .AddChannel<MockChannelAdapter>();
         });
@@ -96,7 +93,6 @@ public class FrameworkStartupTests
         builder.ConfigureServices(services =>
         {
             services.AddAgentix()
-                .AddInMemoryContext()
                 .AddProvider<MockAIProvider>()
                 .AddChannel<MockChannelAdapter>();
         });
@@ -124,7 +120,6 @@ public class FrameworkStartupTests
         builder.ConfigureServices(services =>
         {
             services.AddAgentix()
-                .AddInMemoryContext()
                 .AddProvider<MockAIProvider>()
                 .AddChannel(channel1)
                 .AddChannel(channel2);
@@ -150,7 +145,6 @@ public class FrameworkStartupTests
         builder.ConfigureServices(services =>
         {
             services.AddAgentix()
-                .AddInMemoryContext()
                 .AddProvider<MockAIProvider>()
                 .AddChannel<MockChannelAdapter>();
         });
@@ -166,7 +160,35 @@ public class FrameworkStartupTests
     }
 
     [Fact]
-    public void ServiceRegistration_WithValidConfiguration_ResolvesAllDependencies()
+    public void ServiceRegistration_StatelessMode_ResolvesCoreDependencies()
+    {
+        // Arrange
+        var builder = Host.CreateDefaultBuilder();
+        builder.ConfigureServices(services =>
+        {
+            services.AddAgentix()
+                .AddProvider<MockAIProvider>()
+                .AddChannel<MockChannelAdapter>();
+        });
+
+        using var host = builder.Build();
+
+        // Act & Assert - Core services should resolve without throwing
+        var orchestrator = host.Services.GetRequiredService<IAgentixOrchestrator>();
+        var provider = host.Services.GetRequiredService<IAIProvider>();
+        var channel = host.Services.GetRequiredService<IChannelAdapter>();
+
+        Assert.NotNull(orchestrator);
+        Assert.NotNull(provider);
+        Assert.NotNull(channel);
+        
+        // Context services should NOT be available in stateless mode
+        Assert.Null(host.Services.GetService<IContextResolver>());
+        Assert.Null(host.Services.GetService<IContextStore>());
+    }
+
+    [Fact]
+    public void ServiceRegistration_StatefulMode_ResolvesAllDependencies()
     {
         // Arrange
         var builder = Host.CreateDefaultBuilder();
@@ -185,11 +207,36 @@ public class FrameworkStartupTests
         var provider = host.Services.GetRequiredService<IAIProvider>();
         var channel = host.Services.GetRequiredService<IChannelAdapter>();
         var contextResolver = host.Services.GetRequiredService<IContextResolver>();
+        var contextStore = host.Services.GetRequiredService<IContextStore>();
 
         Assert.NotNull(orchestrator);
         Assert.NotNull(provider);
         Assert.NotNull(channel);
         Assert.NotNull(contextResolver);
+        Assert.NotNull(contextStore);
+    }
+
+    [Fact]
+    public async Task StartAgentixAsync_StatelessMode_WorksCorrectly()
+    {
+        // Arrange
+        var builder = Host.CreateDefaultBuilder();
+        builder.ConfigureServices(services =>
+        {
+            services.AddAgentix()
+                .AddProvider<MockAIProvider>()
+                .AddChannel<MockChannelAdapter>();
+        });
+
+        using var host = builder.Build();
+
+        // Act & Assert - Should start successfully without context services
+        await host.StartAgentixAsync();
+        
+        var info = host.GetAgentixInfo();
+        Assert.Contains("mock-ai", info.AvailableProviders);
+        Assert.Contains("mock-channel", info.AvailableChannels);
+        Assert.Contains("mock-channel", info.RunningChannels);
     }
 
     // Test helper class
