@@ -125,7 +125,21 @@ public static class HostExtensions
 /// </summary>
 public class AgentixSystemInfo
 {
+    /// <summary>
+    /// Gets or sets the list of available AI provider names in the system.
+    /// </summary>
+    /// <value>A list of provider names (e.g., "claude", "openai") that are registered and available for use.</value>
     public List<string> AvailableProviders { get; set; } = new();
+    
+    /// <summary>
+    /// Gets or sets the list of available channel adapter names in the system.
+    /// </summary>
+    /// <value>A list of channel names (e.g., "console", "slack", "teams") that are registered and available for use.</value>
     public List<string> AvailableChannels { get; set; } = new();
+    
+    /// <summary>
+    /// Gets or sets the list of channel adapter names that are currently running.
+    /// </summary>
+    /// <value>A list of channel names that are actively running and processing messages.</value>
     public List<string> RunningChannels { get; set; } = new();
 } 

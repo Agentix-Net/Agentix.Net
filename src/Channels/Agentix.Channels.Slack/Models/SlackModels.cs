@@ -4,9 +4,9 @@ using System.Text.Json.Serialization;
 namespace Agentix.Channels.Slack.Models;
 
 /// <summary>
-/// Slack event callback structure
+/// Internal model representing a Slack event callback structure.
 /// </summary>
-public class SlackEventCallback
+internal class SlackEventCallback
 {
     [JsonPropertyName("token")]
     public string Token { get; set; } = string.Empty;
@@ -34,9 +34,9 @@ public class SlackEventCallback
 }
 
 /// <summary>
-/// Slack event data
+/// Internal model representing Slack event data.
 /// </summary>
-public class SlackEvent
+internal class SlackEvent
 {
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
@@ -67,9 +67,9 @@ public class SlackEvent
 }
 
 /// <summary>
-/// Slack message post request
+/// Internal model representing a Slack message post request.
 /// </summary>
-public class SlackMessageRequest
+internal class SlackMessageRequest
 {
     [JsonPropertyName("channel")]
     public string Channel { get; set; } = string.Empty;
@@ -91,9 +91,9 @@ public class SlackMessageRequest
 }
 
 /// <summary>
-/// Slack API response
+/// Internal model representing a Slack API response.
 /// </summary>
-public class SlackApiResponse
+internal class SlackApiResponse
 {
     [JsonPropertyName("ok")]
     public bool Ok { get; set; }
@@ -109,18 +109,18 @@ public class SlackApiResponse
 }
 
 /// <summary>
-/// Slack user info response
+/// Internal model representing a Slack user info response.
 /// </summary>
-public class SlackUserInfoResponse : SlackApiResponse
+internal class SlackUserInfoResponse : SlackApiResponse
 {
     [JsonPropertyName("user")]
     public SlackUser? User { get; set; }
 }
 
 /// <summary>
-/// Slack user data
+/// Internal model representing Slack user data.
 /// </summary>
-public class SlackUser
+internal class SlackUser
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
@@ -139,18 +139,18 @@ public class SlackUser
 }
 
 /// <summary>
-/// Slack channel info response
+/// Internal model representing a Slack channel info response.
 /// </summary>
-public class SlackChannelInfoResponse : SlackApiResponse
+internal class SlackChannelInfoResponse : SlackApiResponse
 {
     [JsonPropertyName("channel")]
     public new SlackChannel? Channel { get; set; }
 }
 
 /// <summary>
-/// Slack channel data
+/// Internal model representing Slack channel data.
 /// </summary>
-public class SlackChannel
+internal class SlackChannel
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
@@ -168,21 +168,19 @@ public class SlackChannel
     public bool IsIm { get; set; }
 }
 
-// Socket Mode specific models
-
 /// <summary>
-/// Socket Mode connection response from apps.connections.open
+/// Internal model representing Socket Mode connection response from apps.connections.open.
 /// </summary>
-public class SocketModeConnectionResponse : SlackApiResponse
+internal class SocketModeConnectionResponse : SlackApiResponse
 {
     [JsonPropertyName("url")]
     public string? Url { get; set; }
 }
 
 /// <summary>
-/// Socket Mode envelope for all WebSocket messages
+/// Internal model representing Socket Mode envelope for all WebSocket messages.
 /// </summary>
-public class SocketModeEnvelope
+internal class SocketModeEnvelope
 {
     [JsonPropertyName("envelope_id")]
     public string EnvelopeId { get; set; } = string.Empty;
@@ -204,9 +202,9 @@ public class SocketModeEnvelope
 }
 
 /// <summary>
-/// Socket Mode acknowledgment message
+/// Internal model representing Socket Mode acknowledgment message.
 /// </summary>
-public class SocketModeAck
+internal class SocketModeAck
 {
     [JsonPropertyName("envelope_id")]
     public string EnvelopeId { get; set; } = string.Empty;
@@ -216,9 +214,9 @@ public class SocketModeAck
 }
 
 /// <summary>
-/// Socket Mode ping message
+/// Internal model representing Socket Mode ping message.
 /// </summary>
-public class SocketModePing
+internal class SocketModePing
 {
     [JsonPropertyName("type")]
     public string Type { get; set; } = "ping";
@@ -228,9 +226,9 @@ public class SocketModePing
 }
 
 /// <summary>
-/// Socket Mode pong response
+/// Internal model representing Socket Mode pong response.
 /// </summary>
-public class SocketModePong
+internal class SocketModePong
 {
     [JsonPropertyName("type")]
     public string Type { get; set; } = "pong";

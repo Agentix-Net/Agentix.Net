@@ -41,7 +41,7 @@ public static class ServiceCollectionExtensions
 /// <summary>
 /// Fluent builder for configuring Agentix services
 /// </summary>
-public class AgentixBuilder
+public sealed class AgentixBuilder
 {
     private readonly IServiceCollection _services;
 
@@ -111,7 +111,7 @@ public class AgentixBuilder
 /// <summary>
 /// Configuration options for Agentix
 /// </summary>
-public class AgentixOptions
+public sealed class AgentixOptions
 {
     /// <summary>
     /// System prompt to use for AI interactions

@@ -6,7 +6,11 @@ using System.Text.Json;
 
 namespace Agentix.Channels.Slack;
 
-public class SocketModeClient : IDisposable
+/// <summary>
+/// Internal WebSocket client for Slack Socket Mode connections.
+/// Handles WebSocket communication, reconnection logic, and message processing.
+/// </summary>
+internal class SocketModeClient : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<SocketModeClient> _logger;

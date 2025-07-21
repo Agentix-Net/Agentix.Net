@@ -12,7 +12,16 @@ using System.Security.Cryptography;
 
 namespace Agentix.Channels.Slack;
 
-public class SlackChannelAdapter : IChannelAdapter, IDisposable
+/// <summary>
+/// Slack channel adapter that enables AI bot integration with Slack workspaces.
+/// Supports both webhook and Socket Mode connections for flexible deployment scenarios.
+/// </summary>
+/// <remarks>
+/// This adapter handles Slack-specific message formatting, user authentication, 
+/// threading for conversation context, and rich content rendering. It can operate
+/// in webhook mode for production deployments or Socket Mode for development.
+/// </remarks>
+public sealed class SlackChannelAdapter : IChannelAdapter, IDisposable
 {
     private readonly IAgentixOrchestrator _orchestrator;
     private readonly ILogger<SlackChannelAdapter> _logger;
@@ -24,15 +33,52 @@ public class SlackChannelAdapter : IChannelAdapter, IDisposable
     private Task? _runningTask;
     private string? _botUserId;
 
+    /// <summary>
+    /// Gets the unique name identifier for this channel adapter.
+    /// </summary>
+    /// <value>Always returns "slack".</value>
     public string Name => "slack";
+    
+    /// <summary>
+    /// Gets the type of channel this adapter handles.
+    /// </summary>
+    /// <value>Always returns "slack".</value>
     public string ChannelType => "slack";
+    
+    /// <summary>
+    /// Gets a value indicating whether this channel is currently running and processing messages.
+    /// </summary>
+    /// <value>True if the channel is active (either webhook server is running or Socket Mode is connected); otherwise, false.</value>
     public bool IsRunning { get; private set; }
 
-    // Slack supports rich content and interactive elements
+    /// <summary>
+    /// Gets a value indicating whether this channel supports rich content such as formatting, images, and attachments.
+    /// </summary>
+    /// <value>Always returns true. Slack supports rich content including markdown, blocks, and attachments.</value>
     public bool SupportsRichContent => true;
+    
+    /// <summary>
+    /// Gets a value indicating whether this channel supports file uploads from users.
+    /// </summary>
+    /// <value>Always returns true. Slack supports file uploads and sharing.</value>
     public bool SupportsFileUploads => true;
+    
+    /// <summary>
+    /// Gets a value indicating whether this channel supports interactive elements such as buttons and menus.
+    /// </summary>
+    /// <value>Always returns true. Slack supports interactive elements like buttons, select menus, and modals.</value>
     public bool SupportsInteractiveElements => true;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SlackChannelAdapter"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The Agentix orchestrator for processing AI requests.</param>
+    /// <param name="logger">Logger instance for diagnostic and error information.</param>
+    /// <param name="options">Configuration options for the Slack channel. If null, default options are used.</param>
+    /// <remarks>
+    /// The constructor automatically configures the HTTP client for Slack API communication
+    /// and initializes Socket Mode client if Socket Mode is selected in options.
+    /// </remarks>
     public SlackChannelAdapter(
         IAgentixOrchestrator orchestrator,
         ILogger<SlackChannelAdapter> logger,
@@ -64,12 +110,28 @@ public class SlackChannelAdapter : IChannelAdapter, IDisposable
         }
     }
 
+    /// <summary>
+    /// Determines whether this channel adapter can handle the specified message.
+    /// </summary>
+    /// <param name="message">The incoming message to evaluate.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is true if the message is from Slack; otherwise, false.</returns>
     public Task<bool> CanHandleAsync(IncomingMessage message)
     {
         // Slack channel can handle messages from Slack
         return Task.FromResult(message.Channel == ChannelType || message.Channel == "slack");
     }
 
+    /// <summary>
+    /// Processes an incoming message and coordinates with the AI provider to generate a response.
+    /// </summary>
+    /// <param name="message">The incoming message to process.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the channel response.</returns>
+    /// <remarks>
+    /// This method processes messages received from Slack, whether through webhooks or Socket Mode,
+    /// and forwards them to the AI orchestrator for response generation. The method handles
+    /// conversation context and user/channel filtering automatically.
+    /// </remarks>
     public async Task<ChannelResponse> ProcessAsync(IncomingMessage message, CancellationToken cancellationToken = default)
     {
         try
@@ -98,6 +160,18 @@ public class SlackChannelAdapter : IChannelAdapter, IDisposable
         }
     }
 
+    /// <summary>
+    /// Sends an AI response to Slack using the appropriate formatting and threading.
+    /// </summary>
+    /// <param name="response">The AI response to send to Slack.</param>
+    /// <param name="context">The message context containing routing and metadata information.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous send operation.</returns>
+    /// <remarks>
+    /// This method handles response formatting, length truncation, metadata inclusion,
+    /// and threading based on the channel configuration. It automatically uses Slack's
+    /// threading feature if enabled to keep conversations organized.
+    /// </remarks>
     public async Task SendResponseAsync(AIResponse response, MessageContext context, CancellationToken cancellationToken = default)
     {
         try
@@ -134,6 +208,17 @@ public class SlackChannelAdapter : IChannelAdapter, IDisposable
         }
     }
 
+    /// <summary>
+    /// Starts the Slack channel and begins listening for incoming messages.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous start operation.</returns>
+    /// <remarks>
+    /// This method starts the appropriate connection method (webhook server or Socket Mode client)
+    /// based on the configuration. It validates required tokens and secrets before starting,
+    /// retrieves the bot user ID from Slack, and begins processing incoming events.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown when required configuration is missing or invalid.</exception>
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (IsRunning)
@@ -188,6 +273,16 @@ public class SlackChannelAdapter : IChannelAdapter, IDisposable
         }
     }
 
+    /// <summary>
+    /// Stops the Slack channel and terminates all connections.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous stop operation.</returns>
+    /// <remarks>
+    /// This method gracefully shuts down the webhook server or Socket Mode client,
+    /// cancels any pending operations, and cleans up resources. It handles both
+    /// connection modes appropriately.
+    /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         if (!IsRunning)
@@ -201,33 +296,39 @@ public class SlackChannelAdapter : IChannelAdapter, IDisposable
         IsRunning = false;
         _cancellationTokenSource?.Cancel();
 
-        if (_options.Mode == SlackChannelMode.Webhook && _webApp != null)
+        try
         {
-            await _webApp.StopAsync(cancellationToken);
-            await _webApp.DisposeAsync();
-            _webApp = null;
-        }
-
-        if (_options.Mode == SlackChannelMode.SocketMode && _socketModeClient != null)
-        {
-            await _socketModeClient.DisconnectAsync(cancellationToken);
-        }
-
-        if (_runningTask != null)
-        {
-            try
+            if (_options.Mode == SlackChannelMode.Webhook && _webApp != null)
             {
-                await _runningTask;
+                await _webApp.StopAsync(cancellationToken);
+                await _webApp.DisposeAsync();
+                _webApp = null;
             }
-            catch (OperationCanceledException)
+            else if (_options.Mode == SlackChannelMode.SocketMode && _socketModeClient != null)
             {
-                // Expected when cancelling
+                await _socketModeClient.DisconnectAsync(cancellationToken);
             }
+
+            if (_runningTask != null)
+            {
+                try
+                {
+                    await _runningTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected when cancelling
+                }
+                _runningTask = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during Slack channel shutdown");
         }
 
         _cancellationTokenSource?.Dispose();
         _cancellationTokenSource = null;
-        _runningTask = null;
 
         _logger.LogInformation("Slack channel stopped");
     }
@@ -630,6 +731,14 @@ public class SlackChannelAdapter : IChannelAdapter, IDisposable
         return null;
     }
 
+    /// <summary>
+    /// Releases all resources used by the <see cref="SlackChannelAdapter"/>.
+    /// </summary>
+    /// <remarks>
+    /// This method disposes the HTTP client, Socket Mode client, and any other
+    /// resources used by the adapter. It's called automatically when the object
+    /// is disposed or finalized.
+    /// </remarks>
     public void Dispose()
     {
         _httpClient?.Dispose();
