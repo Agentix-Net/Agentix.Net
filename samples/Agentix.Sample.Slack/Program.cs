@@ -2,6 +2,7 @@ using Agentix.Core.Extensions;
 using Agentix.Providers.Claude.Extensions;
 using Agentix.Channels.Slack.Extensions;
 using Agentix.Channels.Slack;
+using Agentix.Context.InMemory.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -73,6 +74,7 @@ When responding in Slack:
 You can respond to direct messages and mentions in channels. Feel free to use emojis to make conversations more engaging! 😊";
                 options.EnableCostTracking = true;
             })
+            .AddInMemoryContext()
             .AddClaudeProvider(options =>
             {
                 options.ApiKey = claudeApiKey;
