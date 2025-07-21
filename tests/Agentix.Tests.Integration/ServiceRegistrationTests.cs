@@ -21,9 +21,8 @@ public class ServiceRegistrationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - Test provider registration without context dependency
         services.AddAgentix()
-            .AddInMemoryContext()
             .AddClaudeProvider(options =>
             {
                 options.ApiKey = "test-key-not-used";
@@ -47,9 +46,8 @@ public class ServiceRegistrationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - Test channel registration without context dependency
         services.AddAgentix()
-            .AddInMemoryContext()
             .AddConsoleChannel(options =>
             {
                 options.WelcomeMessage = "Test welcome";
@@ -71,9 +69,8 @@ public class ServiceRegistrationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - Test channel registration without context dependency
         services.AddAgentix()
-            .AddInMemoryContext()
             .AddSlackChannel(options =>
             {
                 options.BotToken = "test-token-not-used";
@@ -100,7 +97,7 @@ public class ServiceRegistrationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - This test specifically tests context registration, so keep context
         services.AddAgentix()
             .AddInMemoryContext();
         
@@ -108,7 +105,9 @@ public class ServiceRegistrationTests
         
         // Assert
         var contextStore = serviceProvider.GetService<IContextStore>();
+        var contextResolver = serviceProvider.GetService<IContextResolver>();
         Assert.NotNull(contextStore);
+        Assert.NotNull(contextResolver);
     }
 
     [Fact]
@@ -117,7 +116,7 @@ public class ServiceRegistrationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - Test complete setup including context (stateful mode)
         services.AddAgentix(options =>
         {
             options.SystemPrompt = "Test system prompt";
@@ -158,9 +157,8 @@ public class ServiceRegistrationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - Test multiple provider registration without context dependency
         services.AddAgentix()
-            .AddInMemoryContext()
             .AddClaudeProvider(options =>
             {
                 options.ApiKey = "claude-test-key";
@@ -183,9 +181,8 @@ public class ServiceRegistrationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - Test multiple channel registration without context dependency
         services.AddAgentix()
-            .AddInMemoryContext()
             .AddConsoleChannel(options =>
             {
                 options.WelcomeMessage = "Console welcome";
@@ -208,21 +205,84 @@ public class ServiceRegistrationTests
     }
 
     [Fact]
-    public void ServiceRegistration_WithMinimalConfig_WorksCorrectly()
+    public void ServiceRegistration_StatelessMode_WorksCorrectly()
     {
         // Arrange
         var services = new ServiceCollection();
         
-        // Act - Minimal configuration that should work
+        // Act - Test that minimal stateless configuration works
+        services.AddAgentix();
+        
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Assert - Core services should be registered even without context
+        Assert.NotNull(serviceProvider.GetService<IAgentixOrchestrator>());
+        Assert.NotNull(serviceProvider.GetService<AgentixOptions>());
+        
+        // Context services should NOT be registered in stateless mode
+        Assert.Null(serviceProvider.GetService<IContextResolver>());
+        Assert.Null(serviceProvider.GetService<IContextStore>());
+    }
+
+    [Fact]
+    public void ServiceRegistration_StatefulMode_WorksCorrectly()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        
+        // Act - Test that context-enabled configuration works
         services.AddAgentix()
             .AddInMemoryContext();
         
         var serviceProvider = services.BuildServiceProvider();
         
-        // Assert - Core services should be registered even with minimal config
+        // Assert - All services including context should be registered
         Assert.NotNull(serviceProvider.GetService<IAgentixOrchestrator>());
         Assert.NotNull(serviceProvider.GetService<IContextResolver>());
+        Assert.NotNull(serviceProvider.GetService<IContextStore>());
         Assert.NotNull(serviceProvider.GetService<AgentixOptions>());
+    }
+
+    [Fact]
+    public void CompleteFrameworkSetup_StatelessMode_RegistersCorrectly()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        
+        // Act - Test complete setup without context (stateless mode)
+        services.AddAgentix(options =>
+        {
+            options.SystemPrompt = "Test system prompt";
+            options.EnableCostTracking = true;
+            options.MaxConcurrentRequests = 5;
+        })
+        .AddClaudeProvider(options =>
+        {
+            options.ApiKey = "test-key";
+            options.DefaultModel = "claude-3-haiku-20240307";
+        })
+        .AddConsoleChannel(options =>
+        {
+            options.WelcomeMessage = "Test welcome";
+        });
+        
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Assert - Core services should be registered, context services should not
+        Assert.NotNull(serviceProvider.GetService<IAgentixOrchestrator>());
+        Assert.NotNull(serviceProvider.GetService<IAIProvider>());
+        Assert.NotNull(serviceProvider.GetService<IChannelAdapter>());
+        
+        // Context services should NOT be available in stateless mode
+        Assert.Null(serviceProvider.GetService<IContextResolver>());
+        Assert.Null(serviceProvider.GetService<IContextStore>());
+        
+        // Assert - Configuration should be applied
+        var options = serviceProvider.GetService<AgentixOptions>();
+        Assert.NotNull(options);
+        Assert.Equal("Test system prompt", options.SystemPrompt);
+        Assert.True(options.EnableCostTracking);
+        Assert.Equal(5, options.MaxConcurrentRequests);
     }
 
     [Fact]
@@ -231,7 +291,6 @@ public class ServiceRegistrationTests
         // Arrange
         var services = new ServiceCollection();
         services.AddAgentix()
-            .AddInMemoryContext()
             .AddClaudeProvider(options =>
             {
                 options.ApiKey = "invalid-key-for-testing";

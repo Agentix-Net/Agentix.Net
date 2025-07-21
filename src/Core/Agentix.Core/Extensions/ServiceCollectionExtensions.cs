@@ -24,8 +24,8 @@ public static class ServiceCollectionExtensions
         // Register core services
         services.AddSingleton<IAgentixOrchestrator, AgentixOrchestrator>();
         
-        // Add default context resolver
-        services.AddContextResolver();
+        // Note: Context services (IContextStore, IContextResolver) are now opt-in
+        // Add them explicitly via .AddInMemoryContext() or similar extensions
         
         // Add logging if not already configured
         services.AddLogging(builder =>
@@ -87,8 +87,12 @@ public sealed class AgentixBuilder
     }
 
     /// <summary>
-    /// Configure a custom context resolver
+    /// Configure a custom context resolver (requires context store to also be registered)
     /// </summary>
+    /// <remarks>
+    /// This method is typically used with context-enabled configurations.
+    /// Ensure you have also registered an IContextStore implementation via .AddInMemoryContext() or similar.
+    /// </remarks>
     public AgentixBuilder WithContextResolver<T>() where T : class, IContextResolver
     {
         // Remove existing context resolver registration

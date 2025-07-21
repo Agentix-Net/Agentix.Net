@@ -20,15 +20,17 @@ public class FrameworkConfigurationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
-        services.AddAgentix()
-            .AddInMemoryContext();
+        // Act - Test stateless mode (no context)
+        services.AddAgentix();
         var serviceProvider = services.BuildServiceProvider();
         
         // Assert
         Assert.NotNull(serviceProvider.GetService<IAgentixOrchestrator>());
-        Assert.NotNull(serviceProvider.GetService<IContextResolver>());
         Assert.NotNull(serviceProvider.GetService<AgentixOptions>());
+        
+        // Context services should NOT be registered in stateless mode
+        Assert.Null(serviceProvider.GetService<IContextResolver>());
+        Assert.Null(serviceProvider.GetService<IContextStore>());
     }
 
     [Fact]
@@ -40,14 +42,13 @@ public class FrameworkConfigurationTests
         const bool customCostTracking = false;
         const int customConcurrency = 5;
         
-        // Act
+        // Act - Test without context to verify options configuration works independently
         services.AddAgentix(options =>
         {
             options.SystemPrompt = customPrompt;
             options.EnableCostTracking = customCostTracking;
             options.MaxConcurrentRequests = customConcurrency;
-        })
-        .AddInMemoryContext();
+        });
         
         var serviceProvider = services.BuildServiceProvider();
         var agentixOptions = serviceProvider.GetRequiredService<AgentixOptions>();
@@ -64,9 +65,8 @@ public class FrameworkConfigurationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - Test without context to verify provider/channel registration works independently
         services.AddAgentix()
-            .AddInMemoryContext()
             .AddProvider<MockAIProvider>()
             .AddChannel<MockChannelAdapter>();
         
@@ -96,9 +96,8 @@ public class FrameworkConfigurationTests
         var provider1 = new TestProvider("test-provider-1");
         var provider2 = new TestProvider("test-provider-2");
         
-        // Act
+        // Act - Test without context to verify multiple provider registration works independently
         services.AddAgentix()
-            .AddInMemoryContext()
             .AddProvider(provider1)
             .AddProvider(provider2);
         
@@ -117,7 +116,7 @@ public class FrameworkConfigurationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
+        // Act - This test specifically tests context functionality, so keep context
         services.AddAgentix()
             .AddInMemoryContext()
             .WithContextResolver<TestContextResolver>();
@@ -136,9 +135,8 @@ public class FrameworkConfigurationTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Act
-        var builder = services.AddAgentix()
-            .AddInMemoryContext();
+        // Act - Test without context to verify builder pattern works independently
+        var builder = services.AddAgentix();
         builder.Services.AddSingleton<ITestService, TestService>();
         
         var serviceProvider = services.BuildServiceProvider();
@@ -147,6 +145,52 @@ public class FrameworkConfigurationTests
         var testService = serviceProvider.GetService<ITestService>();
         Assert.NotNull(testService);
         Assert.IsType<TestService>(testService);
+    }
+
+    [Fact]
+    public void AddAgentix_WithoutContext_WorksCorrectly()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        
+        // Act - Test that framework works correctly in stateless mode
+        services.AddAgentix()
+            .AddProvider<MockAIProvider>()
+            .AddChannel<MockChannelAdapter>();
+
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Assert - Should resolve without context
+        var orchestrator = serviceProvider.GetRequiredService<IAgentixOrchestrator>();
+        Assert.NotNull(orchestrator);
+        
+        // Context services should be null in stateless mode
+        Assert.Null(serviceProvider.GetService<IContextStore>());
+        Assert.Null(serviceProvider.GetService<IContextResolver>());
+    }
+
+    [Fact]
+    public void AddAgentix_WithContext_RegistersContextServices()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        
+        // Act - Test that context services are properly registered when explicitly added
+        services.AddAgentix()
+            .AddInMemoryContext()
+            .AddProvider<MockAIProvider>()
+            .AddChannel<MockChannelAdapter>();
+
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Assert - Both orchestrator and context services should be available
+        var orchestrator = serviceProvider.GetRequiredService<IAgentixOrchestrator>();
+        var contextStore = serviceProvider.GetRequiredService<IContextStore>();
+        var contextResolver = serviceProvider.GetRequiredService<IContextResolver>();
+        
+        Assert.NotNull(orchestrator);
+        Assert.NotNull(contextStore);
+        Assert.NotNull(contextResolver);
     }
 
     // Test helper classes
