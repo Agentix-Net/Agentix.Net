@@ -10,4 +10,5 @@ public class ClaudeOptions
     public int TimeoutSeconds { get; set; } = 30;
     public bool EnableRetry { get; set; } = true;
     public int MaxRetries { get; set; } = 3;
+    public int MaxHistoryMessages { get; set; } = 10;
 } 

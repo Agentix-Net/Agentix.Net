@@ -104,6 +104,57 @@ public enum ResponseType
     StatusUpdate
 }
 
+// Context system models
+
+public class ContextMessage
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Role { get; set; } = string.Empty; // "user", "assistant", "system", "tool"
+    public string Content { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string? ToolName { get; set; } // If this message came from a tool
+    public Dictionary<string, object> Metadata { get; set; } = new();
+    
+    // For token counting and cost tracking
+    public int? InputTokens { get; set; }
+    public int? OutputTokens { get; set; }
+    public decimal? Cost { get; set; }
+}
+
+public class ContextData
+{
+    public string Key { get; set; } = string.Empty;
+    public object? Value { get; set; }
+    public DateTime SetAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ExpiresAt { get; set; }
+    public string Type { get; set; } = string.Empty; // For deserialization
+}
+
+public class ToolResult
+{
+    public string ToolCallId { get; set; } = string.Empty;
+    public string ToolName { get; set; } = string.Empty;
+    public bool Success { get; set; }
+    public object? Data { get; set; }
+    public string? Message { get; set; }
+    public string? ErrorMessage { get; set; }
+    public TimeSpan ExecutionTime { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    
+    // For long-running operations
+    public string? OperationId { get; set; }
+    public ToolExecutionStatus Status { get; set; } = ToolExecutionStatus.Completed;
+}
+
+public enum ToolExecutionStatus
+{
+    Pending,
+    Running,
+    Completed,
+    Failed,
+    Cancelled
+}
+
 public static class DefaultPrompts
 {
     public const string System = "You are a helpful AI assistant. Be concise and accurate in your responses.";

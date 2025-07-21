@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Core\Agentix.Core\Agentix.Core.csproj" />
+    <ProjectReference Include="..\..\src\Context\Agentix.Context.InMemory\Agentix.Context.InMemory.csproj" />
     <ProjectReference Include="..\..\src\Providers\Agentix.Providers.Claude\Agentix.Providers.Claude.csproj" />
     <ProjectReference Include="..\..\src\Channels\Agentix.Channels.Slack\Agentix.Channels.Slack.csproj" />
   </ItemGroup>

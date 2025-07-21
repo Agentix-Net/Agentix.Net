@@ -8,20 +8,26 @@ using Microsoft.Extensions.Logging;
 namespace Agentix.Core.Services;
 
 /// <summary>
-/// Simplified orchestrator that processes messages using AI providers directly from DI
+/// Orchestrator that processes messages with context support using AI providers
 /// </summary>
 public class AgentixOrchestrator : IAgentixOrchestrator
 {
     private readonly IEnumerable<IAIProvider> _providers;
+    private readonly IContextStore _contextStore;
+    private readonly IContextResolver _contextResolver;
     private readonly AgentixOptions _options;
     private readonly ILogger<AgentixOrchestrator> _logger;
 
     public AgentixOrchestrator(
         IEnumerable<IAIProvider> providers,
+        IContextStore contextStore,
+        IContextResolver contextResolver,
         AgentixOptions options,
         ILogger<AgentixOrchestrator> logger)
     {
         _providers = providers;
+        _contextStore = contextStore;
+        _contextResolver = contextResolver;
         _options = options;
         _logger = logger;
     }
@@ -60,6 +66,32 @@ public class AgentixOrchestrator : IAgentixOrchestrator
                 };
             }
 
+            // Resolve context for this message
+            var contextId = _contextResolver.ResolveContextId(message);
+            
+            // Check if we should create a new context
+            if (_contextResolver.ShouldCreateNewContext(message))
+            {
+                await _contextStore.DeleteContextAsync(contextId);
+                _logger.LogInformation("Creating new context for user request: {ContextId}", contextId);
+            }
+            
+            // Get or create context
+            var context = await _contextStore.GetContextAsync(contextId) 
+                         ?? await _contextStore.CreateContextAsync(contextId, message.UserId, message.ChannelId, message.Channel);
+
+            // Add user message to context
+            await context.AddMessageAsync(new ContextMessage
+            {
+                Role = "user",
+                Content = message.Content,
+                Metadata = { 
+                    ["channel"] = message.Channel,
+                    ["channelId"] = message.ChannelId,
+                    ["userName"] = message.UserName
+                }
+            });
+
             // Build AI request
             var aiRequest = new AIRequest
             {
@@ -67,16 +99,47 @@ public class AgentixOrchestrator : IAgentixOrchestrator
                 SystemPrompt = _options.SystemPrompt,
                 UserId = message.UserId,
                 ChannelId = message.ChannelId,
-                ContextId = ContextHelpers.GenerateContextId(message),
+                ContextId = contextId,
                 OriginalMessage = message
             };
 
-            _logger.LogInformation("Processing message from {UserId} in {Channel} using provider {Provider}", 
-                                 message.UserId, message.Channel, provider.Name);
+            _logger.LogInformation("Processing message from {UserId} in {Channel} using provider {Provider} (Context: {ContextId})", 
+                                 message.UserId, message.Channel, provider.Name, contextId);
 
-            // Generate response
-            var response = await provider.GenerateAsync(aiRequest, cancellationToken);
+            // Generate response with context
+            AIResponse response;
+            if (provider.GetType().GetMethod("GenerateWithContextAsync") != null)
+            {
+                // Provider supports context
+                response = await provider.GenerateWithContextAsync(aiRequest, context, cancellationToken);
+            }
+            else
+            {
+                // Fallback to non-context method
+                response = await provider.GenerateAsync(aiRequest, cancellationToken);
+            }
+            
             response.ResponseTime = stopwatch.Elapsed;
+
+            // Save assistant response to context
+            if (response.Success)
+            {
+                await context.AddMessageAsync(new ContextMessage
+                {
+                    Role = "assistant",
+                    Content = response.Content,
+                    InputTokens = response.Usage.InputTokens,
+                    OutputTokens = response.Usage.OutputTokens,
+                    Cost = response.EstimatedCost,
+                    Metadata = { 
+                        ["model"] = response.ModelUsed,
+                        ["provider"] = response.ProviderId
+                    }
+                });
+            }
+
+            // Save context changes
+            await _contextStore.SaveContextAsync(context);
 
             _logger.LogInformation("Generated response in {Duration}ms using {Provider} (Tokens: {InputTokens}/{OutputTokens}, Cost: ${Cost:F4})", 
                                  stopwatch.ElapsedMilliseconds, provider.Name, 
