@@ -2,6 +2,7 @@
 using Agentix.Core.Extensions;
 using Agentix.Providers.Claude.Extensions;
 using Agentix.Channels.Console.Extensions;
+using Agentix.Context.InMemory.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -53,6 +54,7 @@ When responding in the console:
 Feel free to use emojis to make conversations more engaging! 😊";
                 options.EnableCostTracking = true;
             })
+            .AddInMemoryContext()
             .AddClaudeProvider(options =>
             {
                 options.ApiKey = claudeApiKey;

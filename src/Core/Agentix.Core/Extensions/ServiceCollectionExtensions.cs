@@ -24,6 +24,9 @@ public static class ServiceCollectionExtensions
         // Register core services
         services.AddSingleton<IAgentixOrchestrator, AgentixOrchestrator>();
         
+        // Add default context resolver
+        services.AddContextResolver();
+        
         // Add logging if not already configured
         services.AddLogging(builder =>
         {
@@ -80,6 +83,22 @@ public class AgentixBuilder
     public AgentixBuilder AddChannel<T>(T channel) where T : class, IChannelAdapter
     {
         _services.AddSingleton<IChannelAdapter>(channel);
+        return this;
+    }
+
+    /// <summary>
+    /// Configure a custom context resolver
+    /// </summary>
+    public AgentixBuilder WithContextResolver<T>() where T : class, IContextResolver
+    {
+        // Remove existing context resolver registration
+        var contextResolverDescriptor = _services.FirstOrDefault(d => d.ServiceType == typeof(IContextResolver));
+        if (contextResolverDescriptor != null)
+        {
+            _services.Remove(contextResolverDescriptor);
+        }
+        
+        _services.AddContextResolver<T>();
         return this;
     }
 

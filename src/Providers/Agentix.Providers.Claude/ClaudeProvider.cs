@@ -82,6 +82,47 @@ public class ClaudeProvider : IAIProvider
         }
     }
 
+    public async Task<AIResponse> GenerateWithContextAsync(AIRequest request, IConversationContext context, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        try
+        {
+            var claudeRequest = await BuildClaudeRequestWithContextAsync(request, context);
+            var response = await CallClaudeApiAsync(claudeRequest, cancellationToken);
+
+            var content = response.Content.FirstOrDefault()?.Text ?? string.Empty;
+
+            return new AIResponse
+            {
+                Content = content,
+                Success = true,
+                ProviderId = Name,
+                ModelUsed = response.Model,
+                Usage = new UsageMetrics
+                {
+                    InputTokens = response.Usage.InputTokens,
+                    OutputTokens = response.Usage.OutputTokens
+                },
+                EstimatedCost = CalculateCost(response.Usage),
+                ResponseTime = stopwatch.Elapsed
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating response with Claude using context");
+            
+            return new AIResponse
+            {
+                Success = false,
+                ErrorMessage = ex.Message,
+                Type = ResponseType.Error,
+                ProviderId = Name,
+                ResponseTime = stopwatch.Elapsed
+            };
+        }
+    }
+
     public Task<decimal> EstimateCostAsync(AIRequest request)
     {
         // Rough estimation based on character count
@@ -169,6 +210,57 @@ public class ClaudeProvider : IAIProvider
             systemPrompt.Trim().Length > 0)
         {
             claudeRequest.System = systemPrompt;
+        }
+
+        return claudeRequest;
+    }
+
+    private async Task<ClaudeRequest> BuildClaudeRequestWithContextAsync(AIRequest request, IConversationContext context)
+    {
+        var claudeRequest = new ClaudeRequest
+        {
+            Model = request.Options.Model ?? _options.DefaultModel,
+            MaxTokens = request.Options.MaxTokens > 0 ? request.Options.MaxTokens : _options.MaxTokens,
+            Temperature = request.Options.Temperature,
+            Messages = new List<ClaudeMessage>()
+        };
+
+        // Set system prompt if provided and not the default
+        var systemPrompt = request.Options.SystemPromptOverride ?? request.SystemPrompt;
+        if (!string.IsNullOrEmpty(systemPrompt) && 
+            systemPrompt != DefaultPrompts.System && 
+            systemPrompt.Trim().Length > 0)
+        {
+            claudeRequest.System = systemPrompt;
+        }
+
+        // Add conversation history
+        var messages = await context.GetMessagesAsync(_options.MaxHistoryMessages);
+        foreach (var msg in messages.Where(m => m.Role != "system"))
+        {
+            // Map context message roles to Claude roles
+            var claudeRole = msg.Role switch
+            {
+                "user" => "user",
+                "assistant" => "assistant",
+                _ => "user" // Default unknown roles to user
+            };
+
+            claudeRequest.Messages.Add(new ClaudeMessage
+            {
+                Role = claudeRole,
+                Content = msg.Content
+            });
+        }
+
+        // Add the current message (should already be in context, but ensure it's there)
+        if (!claudeRequest.Messages.Any() || claudeRequest.Messages.Last().Content != request.Content)
+        {
+            claudeRequest.Messages.Add(new ClaudeMessage
+            {
+                Role = "user",
+                Content = request.Content
+            });
         }
 
         return claudeRequest;
