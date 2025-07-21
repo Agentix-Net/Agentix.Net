@@ -5,9 +5,15 @@ using Microsoft.Extensions.Logging;
 namespace Agentix.Context.InMemory;
 
 /// <summary>
-/// In-memory implementation of context store
+/// Internal in-memory implementation of the context store interface.
+/// Provides thread-safe context storage with automatic cleanup of expired contexts.
 /// </summary>
-public class InMemoryContextStore : IContextStore
+/// <remarks>
+/// This implementation uses concurrent collections for thread safety and includes
+/// a timer-based cleanup mechanism to remove expired contexts automatically.
+/// It's suitable for development and single-instance deployments.
+/// </remarks>
+internal class InMemoryContextStore : IContextStore
 {
     private readonly ConcurrentDictionary<string, InMemoryConversationContext> _contexts = new();
     private readonly IContextResolver _contextResolver;

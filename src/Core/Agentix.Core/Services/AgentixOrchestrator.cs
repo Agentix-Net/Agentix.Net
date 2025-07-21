@@ -10,7 +10,7 @@ namespace Agentix.Core.Services;
 /// <summary>
 /// Orchestrator that processes messages with context support using AI providers
 /// </summary>
-public class AgentixOrchestrator : IAgentixOrchestrator
+public sealed class AgentixOrchestrator : IAgentixOrchestrator
 {
     private readonly IEnumerable<IAIProvider> _providers;
     private readonly IContextStore _contextStore;
@@ -18,6 +18,14 @@ public class AgentixOrchestrator : IAgentixOrchestrator
     private readonly AgentixOptions _options;
     private readonly ILogger<AgentixOrchestrator> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AgentixOrchestrator"/> class.
+    /// </summary>
+    /// <param name="providers">The collection of available AI providers.</param>
+    /// <param name="contextStore">The context store for managing conversation state.</param>
+    /// <param name="contextResolver">The context resolver for determining conversation boundaries.</param>
+    /// <param name="options">The configuration options for the orchestrator.</param>
+    /// <param name="logger">The logger for diagnostic and error information.</param>
     public AgentixOrchestrator(
         IEnumerable<IAIProvider> providers,
         IContextStore contextStore,
@@ -32,11 +40,32 @@ public class AgentixOrchestrator : IAgentixOrchestrator
         _logger = logger;
     }
 
+    /// <summary>
+    /// Processes an incoming message using the first available AI provider.
+    /// </summary>
+    /// <param name="message">The incoming message to process.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the AI response.</returns>
+    /// <remarks>
+    /// This method uses the first available AI provider from the registered providers.
+    /// For more control over provider selection, use the overload that accepts a provider name.
+    /// </remarks>
     public async Task<AIResponse> ProcessMessageAsync(IncomingMessage message, CancellationToken cancellationToken = default)
     {
         return await ProcessMessageAsync(message, null, cancellationToken);
     }
 
+    /// <summary>
+    /// Processes an incoming message using a specific AI provider or the first available provider.
+    /// </summary>
+    /// <param name="message">The incoming message to process.</param>
+    /// <param name="providerName">The name of the specific AI provider to use, or null to use the first available provider.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the AI response.</returns>
+    /// <remarks>
+    /// This method handles conversation context management, message history, and coordinates
+    /// between the context store and AI provider to generate contextually aware responses.
+    /// </remarks>
     public async Task<AIResponse> ProcessMessageAsync(IncomingMessage message, string? providerName = null, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
