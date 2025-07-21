@@ -25,6 +25,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(options);
         services.AddSingleton<IContextStore, InMemoryContextStore>();
         
+        // Also register the default context resolver since both are needed together
+        services.AddContextResolver();
+        
         return services;
     }
 
