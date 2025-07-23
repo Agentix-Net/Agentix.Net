@@ -101,10 +101,30 @@ await app.RunAsync();
 - `Agentix.Sample.Teams` - Teams bot examples
 - `Agentix.Sample.MultiProvider` - Multiple provider examples
 
+## Available Samples
+
+### [Console Sample](Agentix.Sample.Console/)
+**Basic AI chat in console**
+- Simple setup with Claude provider
+- Console channel integration
+- Configuration examples
+
+### [Slack Bot](Agentix.Sample.Slack/)
+**Deploy your AI to Slack**
+- Full Slack integration with events and commands
+- Multi-channel support
+- Production-ready bot setup
+
+### [GitHub Repository Search](Agentix.Sample.RAG.Console/)
+**AI that understands your codebase**
+- Search multiple GitHub repositories
+- Natural language code queries
+- Code examples with GitHub links
+- Conversation context with search results
+
 ## Planned Samples
 
 - **Agentix.Sample.Web** - ASP.NET Core web application with WebAPI channel
-- **Agentix.Sample.Slack** - Slack bot implementation
 - **Agentix.Sample.Teams** - Microsoft Teams bot
 - **Agentix.Sample.MultiProvider** - Demonstrating multiple AI providers with automatic routing
 - **Agentix.Sample.CustomChannel** - Custom channel implementation example 

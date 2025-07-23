@@ -49,6 +49,11 @@ dotnet run
 **Optional Features:**
 - `Agentix.Context.InMemory` ✅ - Conversation memory
 
+**RAG & Knowledge:**
+- `Agentix.Rag.GitHub` ✅ - GitHub repository search (includes search tools)
+- `Agentix.Rag.InMemory` ✅ - In-memory vector store
+- `Agentix.Rag.Embeddings.OpenAI` ✅ - OpenAI text embeddings
+
 ## 🔥 Add Features
 
 ### Slack Bot
@@ -69,6 +74,25 @@ services.AddInMemoryContext();
 // AI:   "2+2 equals 4."
 // User: "What about the previous answer times 3?"  
 // AI:   "The previous answer (4) times 3 equals 12."
+```
+
+### GitHub Repository Search (RAG)
+```csharp
+// Add AI-powered repository search
+services.AddGitHubRAG(options => {
+    options.AccessToken = "ghp_your-github-token";
+    options.Repositories = [
+        "https://github.com/myorg/backend-api",
+        "https://github.com/myorg/frontend-app"
+    ];
+})
+.AddOpenAIEmbeddings()      // Embedding provider (auto-detects from environment)
+.AddInMemoryVectorStore();  // Vector store implementation
+// GitHub search tool automatically included
+
+// Now your AI can search your codebase!
+// User: "How do we handle authentication?"
+// AI: [Searches repositories and provides code examples]
 ```
 
 ### Multiple Channels
